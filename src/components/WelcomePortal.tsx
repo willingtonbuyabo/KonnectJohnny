@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { 
-  Heart, X, Sparkles, Shield, EyeOff, Flower, Check, 
+  Heart, X, Sparkles, Shield, EyeOff, Flower, Check, ShieldCheck,
   MapPin, MessageSquare, ChevronRight, HelpCircle, Key, Lock, ArrowRight, Smartphone
 } from "lucide-react";
 import { Profile } from "../types";
@@ -218,8 +218,8 @@ export default function WelcomePortal({ onStartAuth, isDemoMode }: WelcomePortal
 
                       {/* Floating Verification Shield */}
                       {activeDemoProfile.is_verified && (
-                        <div className="absolute top-3 right-3 z-20 bg-brand-gold text-brand-obsidian p-1 rounded-full shadow-md flex items-center justify-center">
-                          <Check className="w-3 h-3 stroke-[3]" />
+                        <div className="absolute top-3 right-3 z-20 bg-emerald-500 text-brand-obsidian p-1 rounded-full shadow-lg flex items-center justify-center animate-verified-glow border border-emerald-400/50">
+                          <ShieldCheck className="w-4.5 h-4.5 text-white" />
                         </div>
                       )}
 

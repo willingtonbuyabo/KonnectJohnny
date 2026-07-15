@@ -45,6 +45,42 @@ body {
   50% { transform: scale(1.15); }
 }
 
+@keyframes verified-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 2px rgba(52, 211, 153, 0.4)) drop-shadow(0 0 4px rgba(52, 211, 153, 0.2));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.8)) drop-shadow(0 0 12px rgba(52, 211, 153, 0.5));
+    transform: scale(1.08);
+  }
+}
+
+@keyframes gold-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 .animate-pulse-heart {
   animation: heart-pulse 2s infinite ease-in-out;
+}
+
+.animate-verified-glow {
+  animation: verified-glow 2.5s infinite ease-in-out;
+  display: inline-flex;
+}
+
+.animate-gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(197, 160, 89, 0.1) 25%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(197, 160, 89, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: gold-shimmer 3s infinite linear;
 }

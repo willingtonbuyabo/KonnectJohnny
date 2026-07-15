@@ -123,7 +123,11 @@ export default function ProfileCard({ profile, onLike, onPass, blurForUnverified
                 <h4 className="font-display font-bold text-2xl tracking-tight flex items-center gap-1.5">
                   {profile.name}, {profile.age}
                   {profile.is_verified && (
-                    <ShieldCheck className="w-5 h-5 text-emerald-400 fill-emerald-400/20" title="Verified Profile" />
+                    <span className="animate-verified-glow inline-flex items-center justify-center relative" title="Verified Profile">
+                      {/* Premium pulsing aura ring */}
+                      <span className="absolute inset-0 rounded-full bg-emerald-400/20 blur-sm scale-125" />
+                      <ShieldCheck className="w-5 h-5 text-emerald-400 fill-emerald-400/30 relative z-10" />
+                    </span>
                   )}
                 </h4>
 
@@ -171,8 +175,8 @@ export default function ProfileCard({ profile, onLike, onPass, blurForUnverified
                 Back to swiping
               </button>
               {profile.is_verified && (
-                <div className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full px-2 py-0.5 text-[9px] uppercase tracking-wider font-sans">
-                  <ShieldCheck className="w-3 h-3" /> Verified
+                <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-500/20 to-emerald-500/5 border border-emerald-500/40 text-emerald-300 rounded-full px-2.5 py-0.5 text-[9px] uppercase tracking-wider font-sans font-semibold shadow-sm animate-verified-glow">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" /> Verified
                 </div>
               )}
             </div>
