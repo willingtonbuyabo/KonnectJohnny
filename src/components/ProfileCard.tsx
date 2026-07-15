@@ -1,0 +1,263 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import React, { useState } from "react";
+import { ShieldCheck, MapPin, Info, ArrowLeft, Heart, Flower, Sparkles, Check, Lock } from "lucide-react";
+import { Profile } from "../types";
+
+interface ProfileCardProps {
+  profile: Profile;
+  onLike: () => void;
+  onPass: () => void;
+  blurForUnverified: boolean;
+  isCurrentUserVerified: boolean;
+}
+
+export default function ProfileCard({ profile, onLike, onPass, blurForUnverified, isCurrentUserVerified }: ProfileCardProps) {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const imagesCount = profile.images.length;
+
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : imagesCount - 1));
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCurrentImageIndex((prev) => (prev < imagesCount - 1 ? prev + 1 : 0));
+  };
+
+  const shouldBlur = blurForUnverified && !profile.is_verified && !isCurrentUserVerified;
+
+  return (
+    <div className="relative w-full max-w-sm h-[520px] rounded-[32px] overflow-hidden bg-brand-plum border border-brand-lavender/40 shadow-2xl flex flex-col select-none">
+      {/* Photo stack / Tinder card */}
+      <div className="relative w-full h-full overflow-hidden flex-1 group">
+        {/* Images Navigation bar indicators */}
+        {imagesCount > 1 && !isExpanded && (
+          <div className="absolute top-4 left-4 right-4 z-20 flex gap-1.5 px-2">
+            {profile.images.map((_, idx) => (
+              <div
+                key={idx}
+                className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                  idx === currentImageIndex ? "bg-brand-gold" : "bg-white/30"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Profile Image with Blur Option */}
+        <div className="absolute inset-0 bg-brand-obsidian">
+          <img
+            src={profile.images[currentImageIndex]}
+            alt={profile.name}
+            className={`w-full h-full object-cover transition-all duration-500 ${
+              shouldBlur ? "blur-2xl opacity-40 scale-110" : "scale-100"
+            }`}
+            referrerPolicy="no-referrer"
+          />
+
+          {/* Secure Blur Overlay for privacy */}
+          {shouldBlur && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-brand-obsidian/80 px-6 text-center z-10">
+              <div className="w-14 h-14 rounded-2xl bg-brand-lavender/80 border border-brand-gold/30 flex items-center justify-center mb-4">
+                <Lock className="w-6 h-6 text-brand-gold" />
+              </div>
+              <h4 className="font-display font-semibold text-brand-cream text-base mb-1">
+                Photo Discretely Blurred
+              </h4>
+              <p className="text-xs text-brand-cream/60 max-w-xs leading-relaxed">
+                This user has enabled Discretion Blurring. Obtain verification (blue shield check) to unlock high-res photos.
+              </p>
+              <div className="mt-4 bg-brand-gold/10 border border-brand-gold/30 text-brand-gold rounded-full px-3 py-1 text-[10px] font-sans font-medium uppercase tracking-wider flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Discretion Active
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Tap areas to swipe image */}
+        {!isExpanded && !shouldBlur && (
+          <>
+            <div
+              className="absolute left-0 top-12 bottom-20 w-1/2 z-10 cursor-w-resize"
+              onClick={handlePrevImage}
+            />
+            <div
+              className="absolute right-0 top-12 bottom-20 w-1/2 z-10 cursor-e-resize"
+              onClick={handleNextImage}
+            />
+          </>
+        )}
+
+        {/* Gradient Overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-brand-obsidian via-brand-obsidian/30 to-transparent pointer-events-none" />
+
+        {/* Front Info Card details Overlay */}
+        {!isExpanded && (
+          <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col justify-end text-brand-cream z-20">
+            {/* Badges row */}
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              <span className="text-[10px] font-sans font-semibold tracking-wider uppercase bg-brand-lavender/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-brand-gold/20 text-brand-gold">
+                {profile.orientation}
+              </span>
+              <span className="text-[10px] font-sans font-semibold tracking-wider uppercase bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-brand-cream/90">
+                {profile.gender}
+              </span>
+              {profile.pronouns && (
+                <span className="text-[10px] font-sans font-semibold tracking-wider bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-brand-cream/60">
+                  {profile.pronouns}
+                </span>
+              )}
+            </div>
+
+            {/* Profile main details */}
+            <div className="flex items-end justify-between gap-2">
+              <div>
+                <h4 className="font-display font-bold text-2xl tracking-tight flex items-center gap-1.5">
+                  {profile.name}, {profile.age}
+                  {profile.is_verified && (
+                    <ShieldCheck className="w-5 h-5 text-emerald-400 fill-emerald-400/20" title="Verified Profile" />
+                  )}
+                </h4>
+
+                <div className="flex items-center gap-1 text-xs text-brand-cream/80 mt-1">
+                  <MapPin className="w-3.5 h-3.5 text-brand-gold-muted" />
+                  <span>{profile.location_name}</span>
+                  <span className="mx-1">•</span>
+                  <span>{profile.distance_km} km away</span>
+                </div>
+              </div>
+
+              {/* Info Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(true);
+                }}
+                className="w-10 h-10 rounded-full bg-brand-cream/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-brand-cream hover:bg-brand-gold hover:text-brand-obsidian hover:border-brand-gold transition-all duration-300 active:scale-95 shadow-md shrink-0"
+                title="View Full Profile Details"
+              >
+                <Info className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Micro Jonny Massage Affinity Tribute */}
+            {profile.massage_affinity && (
+              <div className="mt-3 flex items-center gap-1.5 bg-brand-gold/10 border border-brand-gold/20 rounded-xl px-3 py-1.5 text-[10px] text-brand-gold-muted font-sans tracking-wide">
+                <Flower className="w-3.5 h-3.5 text-brand-gold shrink-0 animate-pulse-heart" />
+                <span>Jonny affinity: <strong className="text-brand-gold font-medium">{profile.massage_affinity}</strong></span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Expanded Profile View Overlay */}
+        {isExpanded && (
+          <div className="absolute inset-0 bg-brand-plum overflow-y-auto p-6 text-brand-cream flex flex-col z-30 transition-all duration-300">
+            {/* Header back button */}
+            <div className="flex items-center justify-between mb-4 border-b border-brand-lavender/40 pb-3">
+              <button
+                onClick={() => setIsExpanded(false)}
+                className="flex items-center gap-1 text-xs text-brand-gold-muted hover:text-brand-gold font-sans font-medium transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to swiping
+              </button>
+              {profile.is_verified && (
+                <div className="flex items-center gap-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full px-2 py-0.5 text-[9px] uppercase tracking-wider font-sans">
+                  <ShieldCheck className="w-3 h-3" /> Verified
+                </div>
+              )}
+            </div>
+
+            {/* Expanded Bio details */}
+            <div className="space-y-4 flex-1">
+              <div>
+                <h4 className="font-serif font-bold text-2xl tracking-tight">
+                  {profile.name}, {profile.age}
+                </h4>
+                <p className="text-xs text-brand-cream/50 font-sans mt-0.5">{profile.gender} • {profile.orientation}</p>
+              </div>
+
+              <div className="space-y-1 bg-brand-obsidian/40 border border-brand-lavender/40 rounded-2xl p-4">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">About Me</span>
+                <p className="text-sm text-brand-cream/90 leading-relaxed mt-1">
+                  {profile.bio}
+                </p>
+              </div>
+
+              {/* Massage Jonny Wellness Tribute Section */}
+              {profile.massage_affinity && (
+                <div className="bg-gradient-to-br from-brand-lavender/40 to-brand-plum border border-brand-gold/30 rounded-2xl p-4 space-y-2">
+                  <span className="flex items-center gap-1 text-[10px] uppercase font-mono tracking-widest text-brand-gold font-semibold">
+                    <Flower className="w-4 h-4 text-brand-gold" />
+                    Jonny's Healing Space
+                  </span>
+                  <p className="text-xs text-brand-cream/80 leading-relaxed">
+                    This user loves wellness! Their preference: <strong className="text-brand-gold">{profile.massage_affinity}</strong>. Connect and book a soothing couple's session at Massage Jonny Westlands!
+                  </p>
+                </div>
+              )}
+
+              {/* Interests Tags */}
+              <div className="space-y-2">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">Passions</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.interests.map((interest) => (
+                    <span
+                      key={interest}
+                      className="text-xs bg-brand-lavender/30 border border-brand-lavender/60 text-brand-cream px-3 py-1 rounded-full font-medium"
+                    >
+                      {interest}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Goals */}
+              <div className="space-y-2 pt-2">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">Looking For</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {profile.relationship_goals.map((goal) => (
+                    <span
+                      key={goal}
+                      className="text-xs bg-brand-gold/10 border border-brand-gold/30 text-brand-gold px-3 py-1 rounded-full font-medium"
+                    >
+                      {goal}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick action triggers inside info */}
+            <div className="flex justify-center gap-4 mt-6 pt-4 border-t border-brand-lavender/40">
+              <button
+                onClick={onPass}
+                className="w-12 h-12 rounded-full bg-brand-lavender/30 border border-brand-lavender text-brand-cream/70 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 flex items-center justify-center transition-all duration-300 active:scale-95"
+                title="Pass"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={onLike}
+                className="flex-1 bg-gradient-to-r from-brand-gold-muted to-brand-gold text-brand-obsidian h-12 rounded-2xl font-display font-semibold text-sm tracking-wide flex items-center justify-center gap-1.5 shadow-lg active:scale-98 transition-all"
+                title="Swipe Right"
+              >
+                <Heart className="w-4 h-4 fill-brand-obsidian" />
+                Connect Now
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

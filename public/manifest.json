@@ -1,0 +1,24 @@
+{
+  "short_name": "JonnyMatch",
+  "name": "Jonny Match - Queer Matchmaking",
+  "description": "A premium, safe, mobile-first queer dating and matchmaking application tailored for the Nairobi community.",
+  "icons": [
+    {
+      "src": "/icon-512.jpg",
+      "type": "image/jpeg",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.jpg",
+      "type": "image/jpeg",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0a0a0a",
+  "theme_color": "#C5A059",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/"
+}

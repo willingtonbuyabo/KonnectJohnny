@@ -1,0 +1,8 @@
+{
+  "name": "Jonny Match",
+  "description": "A premium, safe, mobile-first queer dating and matchmaking application tailored for the Nairobi community, featuring secure Supabase integrations, advanced privacy and discretion settings, and Massage Jonny wellness booking.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
