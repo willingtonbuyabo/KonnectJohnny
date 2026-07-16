@@ -84,7 +84,7 @@ export default function WelcomePortal({ onStartAuth, isDemoMode }: WelcomePortal
           </div>
 
           {/* Inner Phone Screen Content with bright, vibrant pride/rainbow gradient background */}
-          <div className="flex-1 flex flex-col bg-gradient-to-tr from-pink-500/20 via-yellow-500/10 to-violet-500/20 text-brand-cream font-sans relative overflow-hidden pt-6">
+          <div className="flex-1 flex flex-col bg-gradient-to-tr from-[#ff3366] via-[#ff9933] via-[#e2b714] via-[#33cc66] via-[#3399ff] to-[#9933ff] text-brand-cream font-sans relative overflow-hidden pt-6">
             
             {/* Mini App Header inside phone with high-vibrancy pride styles */}
             <div className="h-12 border-b border-pink-500/30 px-4 flex items-center justify-between bg-black/40 backdrop-blur-md">
@@ -108,7 +108,7 @@ export default function WelcomePortal({ onStartAuth, isDemoMode }: WelcomePortal
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.95, opacity: 0 }}
-                    className="flex-1 bg-brand-plum/90 border-2 border-pink-500/40 rounded-[28px] overflow-hidden relative shadow-lg shadow-pink-500/10 flex flex-col justify-end"
+                    className="flex-1 bg-black/40 backdrop-blur-sm border-2 border-white/20 rounded-[28px] overflow-hidden relative shadow-xl flex flex-col justify-end"
                   >
                     {/* Profile Image */}
                     <img 
@@ -206,58 +206,60 @@ export default function WelcomePortal({ onStartAuth, isDemoMode }: WelcomePortal
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-brand-obsidian/95 z-20 flex flex-col items-center justify-center p-4 text-center animate-fade-in"
+                  className="absolute inset-0 bg-gradient-to-tr from-[#ff3366] via-[#ff9933] via-[#e2b714] via-[#33cc66] via-[#3399ff] to-[#9933ff] z-20 flex flex-col items-center justify-center p-3 text-center animate-fade-in"
                 >
                   {/* Confetti celebration for mock phone */}
                   <ConfettiCanvas active={showDemoMatchOverlay} />
 
-                  <div className="w-8 h-8 rounded-full bg-brand-gold/10 border border-brand-gold/20 flex items-center justify-center mb-2">
-                    <Sparkles className="w-4 h-4 text-brand-gold" />
-                  </div>
-                  <h4 className="font-serif font-black text-lg text-brand-cream">It's a Match!</h4>
-                  <p className="text-[9px] text-brand-cream/60 max-w-[200px] mx-auto mt-1 leading-relaxed">
-                    You and <strong className="text-brand-gold">{matchedProfile.name}</strong> liked each other!
-                  </p>
-
-                  {/* Circle photos */}
-                  <div className="flex items-center -space-x-4 py-3">
-                    <div className="w-14 h-14 rounded-full p-0.5 bg-brand-gold">
-                      <img 
-                        src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200" 
-                        alt="You" 
-                        className="w-full h-full object-cover rounded-full border border-brand-obsidian"
-                        referrerPolicy="no-referrer"
-                      />
+                  <div className="bg-black/80 backdrop-blur-md border border-white/20 p-4 rounded-3xl flex flex-col items-center justify-center shadow-2xl max-w-[250px] w-full">
+                    <div className="w-8 h-8 rounded-full bg-brand-gold/20 border border-brand-gold/30 flex items-center justify-center mb-1">
+                      <Sparkles className="w-4 h-4 text-brand-gold" />
                     </div>
-                    <div className="w-14 h-14 rounded-full p-0.5 bg-brand-gold">
-                      <img 
-                        src={matchedProfile.images[0]} 
-                        alt={matchedProfile.name} 
-                        className="w-full h-full object-cover rounded-full border border-brand-obsidian"
-                        referrerPolicy="no-referrer"
-                      />
+                    <h4 className="font-serif font-black text-base text-brand-cream">It's a Match!</h4>
+                    <p className="text-[9px] text-brand-cream/80 max-w-[195px] mx-auto mt-0.5 leading-relaxed">
+                      You and <strong className="text-brand-gold font-bold">{matchedProfile.name}</strong> liked each other!
+                    </p>
+
+                    {/* Circle photos */}
+                    <div className="flex items-center -space-x-4 py-2">
+                      <div className="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-[#ff3366] to-[#9933ff]">
+                        <img 
+                          src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200" 
+                          alt="You" 
+                          className="w-full h-full object-cover rounded-full border border-black"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <div className="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-[#ff3366] to-[#9933ff]">
+                        <img 
+                          src={matchedProfile.images[0]} 
+                          alt={matchedProfile.name} 
+                          className="w-full h-full object-cover rounded-full border border-black"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
                     </div>
+
+                    <p className="text-[8px] text-brand-gold font-medium italic mb-2">Try sending a secure greeting...</p>
+
+                    <button
+                      onClick={() => onStartAuth(true)}
+                      className="w-full h-8.5 bg-gradient-to-r from-pink-500 to-violet-600 text-white rounded-lg font-display font-bold text-[9px] uppercase tracking-wider flex items-center justify-center gap-1 shadow-md active:scale-95 transition-all"
+                    >
+                      <MessageSquare className="w-3 h-3 fill-white" />
+                      Sign Up & Chat For Real
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        setShowDemoMatchOverlay(false);
+                        setDemoIndex((prev) => prev + 1);
+                      }}
+                      className="text-[9px] text-brand-cream/60 underline mt-2 hover:text-brand-cream transition-colors"
+                    >
+                      Keep Demo Swiping
+                    </button>
                   </div>
-
-                  <p className="text-[9px] text-brand-gold-muted italic mb-3">Try sending a secure greeting...</p>
-
-                  <button
-                    onClick={() => onStartAuth(true)}
-                    className="w-full h-9 bg-brand-gold text-brand-obsidian rounded-xl font-display font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5 fill-brand-obsidian" />
-                    Sign Up & Chat For Real
-                  </button>
-
-                  <button 
-                    onClick={() => {
-                      setShowDemoMatchOverlay(false);
-                      setDemoIndex((prev) => prev + 1);
-                    }}
-                    className="text-[9px] text-brand-cream/50 underline mt-2 hover:text-brand-cream"
-                  >
-                    Keep Demo Swiping
-                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
