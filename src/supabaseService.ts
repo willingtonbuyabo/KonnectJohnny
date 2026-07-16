@@ -8,11 +8,58 @@ import { Profile, Match, Message, UserProfile, MatchFilters, AppPrivacySettings 
 import { mockProfiles } from "./data/mockProfiles";
 
 // Fetch from Vite environment variables
-const supabaseUrl = ((import.meta as any).env.VITE_SUPABASE_URL || "").trim();
+const rawSupabaseUrl = ((import.meta as any).env.VITE_SUPABASE_URL || "").trim();
 const supabaseAnonKey = ((import.meta as any).env.VITE_SUPABASE_ANON_KEY || "").trim();
 
-// Initialize real Supabase client if credentials are provided
-export const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+// Clean up any trailing /rest/v1/ or /rest/v1 from the URL if it got misconfigured in the environment
+const cleanUrl = (url: string): string => {
+  let cleaned = url.trim();
+  if (cleaned.endsWith("/rest/v1/")) {
+    cleaned = cleaned.slice(0, -9);
+  } else if (cleaned.endsWith("/rest/v1")) {
+    cleaned = cleaned.slice(0, -8);
+  }
+  return cleaned;
+};
+
+const supabaseUrl = cleanUrl(rawSupabaseUrl);
+
+// Function to validate that we have a real, external Supabase endpoint
+const isValidSupabaseUrl = (url: string): boolean => {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    // Don't route to the current origin itself
+    if (typeof window !== "undefined" && parsed.origin === window.location.origin) return false;
+    
+    const host = parsed.hostname.toLowerCase();
+    if (host === "localhost" || host === "127.0.0.1") return false;
+    if (host.includes("placeholder") || host.includes("your-") || host.includes("your_")) return false;
+    
+    // Guard against putting the application domain itself in the URL config
+    if (
+      url.includes("europe-west2.run.app") || 
+      url.includes("ai.studio/build") || 
+      url.includes("ais-dev") || 
+      url.includes("ais-pre")
+    ) {
+      return false;
+    }
+    
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+};
+
+// Initialize real Supabase client if credentials are valid and provided
+export const supabase = 
+  supabaseUrl && 
+  supabaseAnonKey && 
+  isValidSupabaseUrl(supabaseUrl) && 
+  !supabaseAnonKey.toLowerCase().includes("placeholder")
+    ? createClient(supabaseUrl, supabaseAnonKey) 
+    : null;
 
 const STORAGE_KEYS = {
   USER_PROFILE: "jonny_match_user_profile",
@@ -151,7 +198,8 @@ export const supabaseService = {
   // === AUTHENTICATION ===
   auth: {
     async getCurrentUser(): Promise<UserProfile | null> {
-      if (supabase) {
+      const forceDemo = localStorage.getItem("jonny_match_use_demo_mode") === "true";
+      if (supabase && !forceDemo) {
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return null;
@@ -163,12 +211,51 @@ export const supabaseService = {
             .single();
 
           if (profile) {
-            return {
+            const result = {
               ...profile,
               email: user.email,
             } as UserProfile;
+            setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, result);
+            return result;
           }
-          return null;
+
+          // If auth is successful but no profile row exists, check localStorage
+          const cachedProfile = getLocalStorageItem<UserProfile | null>(STORAGE_KEYS.USER_PROFILE, null);
+          if (cachedProfile && cachedProfile.id === user.id) {
+            return {
+              ...cachedProfile,
+              email: user.email || cachedProfile.email,
+            };
+          }
+
+          // Otherwise, construct a clean default
+          const defaultProfile: UserProfile = {
+            id: user.id,
+            name: user.email?.split("@")[0] || "Jonny Guest",
+            age: 26,
+            gender: "Non-binary",
+            pronouns: "They/Them",
+            orientation: "Queer",
+            bio: "Exploring connections...",
+            location_name: "Kilimani, Nairobi",
+            distance_km: 0,
+            images: ["https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600"],
+            interests: ["Coffee", "Art", "Yoga"],
+            is_verified: true,
+            relationship_goals: ["Dating"],
+            massage_affinity: "Swedish Massage Enthusiast",
+            email: user.email || "",
+          };
+
+          setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, defaultProfile);
+          
+          // Try to insert it into Supabase to keep it persistent, but don't fail if it's not possible
+          try {
+            await supabase.from("profiles").insert(defaultProfile);
+          } catch (insertErr) {
+            console.warn("Could not auto-insert default profile:", insertErr);
+          }
+          return defaultProfile;
         } catch (e) {
           console.error("Supabase auth error, falling back", e);
         }
@@ -180,6 +267,7 @@ export const supabaseService = {
     },
 
     async signUp(email: string, password: string, profile: Omit<UserProfile, "id" | "is_verified">): Promise<UserProfile> {
+      localStorage.setItem("jonny_match_use_demo_mode", "false");
       if (supabase) {
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
@@ -196,11 +284,20 @@ export const supabaseService = {
           email,
         };
 
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert(newProfile);
+        try {
+          const { error: profileError } = await supabase
+            .from("profiles")
+            .insert(newProfile);
 
-        if (profileError) throw profileError;
+          if (profileError) {
+            console.warn("Database profiles insert failed, using fallback:", profileError);
+          }
+        } catch (dbErr) {
+          console.warn("Database profiles insert caught exception, using fallback:", dbErr);
+        }
+
+        // Always sync with localStorage for local-first/session consistency
+        setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, newProfile);
         return newProfile;
       }
 
@@ -217,8 +314,14 @@ export const supabaseService = {
       return newLocalProfile;
     },
 
-    async signIn(email: string, password: string): Promise<UserProfile> {
-      if (supabase) {
+    async signIn(email: string, password: string, forceDemo?: boolean): Promise<UserProfile> {
+      if (forceDemo) {
+        localStorage.setItem("jonny_match_use_demo_mode", "true");
+      } else {
+        localStorage.setItem("jonny_match_use_demo_mode", "false");
+      }
+
+      if (supabase && !forceDemo) {
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -227,18 +330,58 @@ export const supabaseService = {
         if (authError) throw authError;
         if (!authData.user) throw new Error("Sign in failed");
 
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", authData.user.id)
-          .single();
+        let profile: UserProfile | null = null;
+        try {
+          const { data, error: profileError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", authData.user.id)
+            .single();
 
-        if (profileError) throw profileError;
+          if (!profileError && data) {
+            profile = data as UserProfile;
+          } else {
+            console.warn("Could not load user profile from database, creating default:", profileError);
+          }
+        } catch (err) {
+          console.warn("Exception during profile fetch:", err);
+        }
 
-        return {
+        if (!profile) {
+          // If no profile row in DB, construct a clean default
+          profile = {
+            id: authData.user.id,
+            name: email.split("@")[0] || "Jonny Guest",
+            age: 26,
+            gender: "Non-binary",
+            pronouns: "They/Them",
+            orientation: "Queer",
+            bio: "Exploring connections...",
+            location_name: "Kilimani, Nairobi",
+            distance_km: 0,
+            images: ["https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600"],
+            interests: ["Coffee", "Art", "Yoga"],
+            is_verified: true,
+            relationship_goals: ["Dating"],
+            massage_affinity: "Swedish Massage Enthusiast",
+            email: authData.user.email || email,
+          };
+
+          // Attempt to insert it so it's there next time, but ignore failures
+          try {
+            await supabase.from("profiles").insert(profile);
+          } catch (e) {
+            console.warn("Could not insert default profile:", e);
+          }
+        }
+
+        const loggedInProfile: UserProfile = {
           ...profile,
-          email: authData.user.id,
-        } as UserProfile;
+          email: authData.user.email || email,
+        };
+
+        setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, loggedInProfile);
+        return loggedInProfile;
       }
 
       // Local demo signIn
@@ -255,6 +398,7 @@ export const supabaseService = {
     },
 
     async signOut(): Promise<void> {
+      localStorage.setItem("jonny_match_use_demo_mode", "false");
       if (supabase) {
         await supabase.auth.signOut();
       }
@@ -331,13 +475,27 @@ export const supabaseService = {
       if (!currentUser) throw new Error("No current user found");
 
       if (supabase) {
-        const { error } = await supabase
-          .from("profiles")
-          .update(profileData)
-          .eq("id", currentUser.id);
+        try {
+          // Use upsert to handle both insert and update gracefully
+          const { error } = await supabase
+            .from("profiles")
+            .upsert({
+              id: currentUser.id,
+              ...currentUser,
+              ...profileData,
+              email: currentUser.email,
+            });
 
-        if (error) throw error;
-        return { ...currentUser, ...profileData };
+          if (error) {
+            console.warn("Database profile update/upsert failed, falling back to local storage:", error);
+          }
+        } catch (dbErr) {
+          console.warn("Exception during profile update in database, falling back:", dbErr);
+        }
+
+        const updated = { ...currentUser, ...profileData };
+        setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, updated);
+        return updated;
       }
 
       // Demo mode

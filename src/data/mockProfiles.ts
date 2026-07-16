@@ -119,5 +119,119 @@ export const mockProfiles: Profile[] = [
     is_verified: true,
     relationship_goals: ["Dating", "Matchmaking"],
     massage_affinity: "Sports Massage Devotee"
+  },
+  {
+    id: "p7",
+    name: "Makena",
+    age: 25,
+    gender: "Cis Woman",
+    pronouns: "She/Her",
+    orientation: "Lesbian",
+    bio: "Graphic designer & LGBT+ community organizer. Obsessed with contemporary art galleries, live slam poetry nights, and outdoor garden cafés in Gigiri. Let's find some sunset views, share some good matcha, and connect!",
+    images: [
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=600",
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=600"
+    ],
+    interests: ["Art", "Design", "Poetry", "Community", "Matcha"],
+    location_name: "Gigiri, Nairobi",
+    distance_km: 5.1,
+    is_verified: true,
+    relationship_goals: ["Dating", "Deep Connections"],
+    massage_affinity: "Aromatherapy Fan"
+  },
+  {
+    id: "p8",
+    name: "Mwangi",
+    age: 27,
+    gender: "Cis Man",
+    pronouns: "He/Him",
+    orientation: "Gay",
+    bio: "Afrobeats DJ, podcaster, and personal fitness trainer in Kilimani. Huge fan of high-energy house music, early morning runs, and dynamic deep tissue massage therapy. Always spreading good vibes and radiant smiles!",
+    images: [
+      "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=600",
+      "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&q=80&w=600"
+    ],
+    interests: ["DJing", "Fitness", "Podcasts", "House Music", "Swimming"],
+    location_name: "Kilimani, Nairobi",
+    distance_km: 1.2,
+    is_verified: true,
+    relationship_goals: ["Dating", "Matchmaking"],
+    massage_affinity: "Deep Tissue Devotee"
+  },
+  {
+    id: "p9",
+    name: "Sasha",
+    age: 26,
+    gender: "Trans Woman",
+    pronouns: "She/Her",
+    orientation: "Lesbian",
+    bio: "Professional makeup artist and beauty content creator based in Westlands. Loving bold winged eyeliner, retro runway fashion, and upbeat sushi nights with friends. Always looking for genuine lesbian connections and a therapeutic massage session.",
+    images: [
+      "https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&q=80&w=600",
+      "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&q=80&w=600"
+    ],
+    interests: ["Makeup Artistry", "Runway Fashion", "Sushi", "Vlogging", "Self-Care"],
+    location_name: "Westlands, Nairobi",
+    distance_km: 2.9,
+    is_verified: true,
+    relationship_goals: ["Dating", "Friends First"],
+    massage_affinity: "Swedish Massage Enthusiast"
+  },
+  {
+    id: "p10",
+    name: "Tariq",
+    age: 30,
+    gender: "Cis Man",
+    pronouns: "He/Him",
+    orientation: "Gay",
+    bio: "Culinary arts instructor and lifestyle food photographer. Big lover of hot spicy food, weekend road trips to Lake Naivasha, and hot stone therapy. Let's swap secret recipes and explore the Nairobi food scene together!",
+    images: [
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=600",
+      "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&q=80&w=600"
+    ],
+    interests: ["Cooking", "Photography", "Travel", "Hot Spicy Food", "Wine Tasting"],
+    location_name: "Lavington, Nairobi",
+    distance_km: 3.8,
+    is_verified: true,
+    relationship_goals: ["Long-term", "Matchmaking"],
+    massage_affinity: "Hot Stone Enthusiast"
+  },
+  {
+    id: "p11",
+    name: "Wanjiku",
+    age: 29,
+    gender: "Cis Woman",
+    pronouns: "She/Her",
+    orientation: "Lesbian",
+    bio: "Indie bookstore owner and craft coffee enthusiast in Lavington. Always found buried in a classic vintage novel with a freshly brewed cup of pour-over coffee. Passionate about slow-living, reflexology, and matching like-minded creative souls.",
+    images: [
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=600",
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600"
+    ],
+    interests: ["Literature", "Specialty Coffee", "Slow-Living", "Vintage Records", "Aromatherapy"],
+    location_name: "Lavington, Nairobi",
+    distance_km: 4.1,
+    is_verified: true,
+    relationship_goals: ["Dating", "Deep Connections"],
+    massage_affinity: "Aromatherapy Fan"
+  },
+  {
+    id: "p12",
+    name: "Jaden",
+    age: 23,
+    gender: "Cis Man",
+    pronouns: "He/Him",
+    orientation: "Gay",
+    bio: "UX / UI product designer and competitive swimmer. Highly energetic, loves exploring Nairobi on electric scooters, and down for sunset picnics at Karura Forest. Let's grab some craft beer and chat about design and massage therapy!",
+    images: [
+      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600",
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=600"
+    ],
+    interests: ["UX Design", "Swimming", "Craft Beer", "Picnics", "Electric Scooters"],
+    location_name: "Westlands, Nairobi",
+    distance_km: 2.2,
+    is_verified: true,
+    relationship_goals: ["Dating", "Casual Fun"],
+    massage_affinity: "Sports Massage Devotee"
   }
 ];

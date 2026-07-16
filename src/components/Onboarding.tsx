@@ -4,8 +4,9 @@
  */
 
 import React, { useState } from "react";
-import { User, ShieldCheck, Heart, MapPin, Sparkles, Upload, Flower, CheckCircle, Check, Key } from "lucide-react";
+import { User, ShieldCheck, Heart, MapPin, Sparkles, Upload, Flower, CheckCircle, Check, Key, Loader2 } from "lucide-react";
 import { UserProfile } from "../types";
+import { supabaseService } from "../supabaseService";
 
 interface OnboardingProps {
   userProfile: UserProfile | null;
@@ -44,6 +45,11 @@ export default function Onboarding({ userProfile, onSave, onSignOut, isDemoMode,
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(initialSignUp);
 
+  // States for Loading, Errors, and Drag & Drop file upload
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+
   // Form Fields
   const [name, setName] = useState(userProfile?.name || "");
   const [age, setAge] = useState(userProfile?.age || 25);
@@ -63,54 +69,134 @@ export default function Onboarding({ userProfile, onSave, onSignOut, isDemoMode,
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const updatedProfile: UserProfile = {
-      id: userProfile?.id || "current_user",
-      name,
-      age: Number(age),
-      gender,
-      pronouns,
-      orientation,
-      bio,
-      location_name: locationName,
-      distance_km: 0,
-      images: [imageUrl],
-      interests: ["Art", "Yoga", "Vinyl", "Music"],
-      is_verified: isVerified,
-      relationship_goals: selectedGoals,
-      massage_affinity: massageAffinity,
-      email: userProfile?.email || email || "demo@massagejohnny.com",
-    };
-
-    onSave(updatedProfile);
-    setIsAuthMode(false);
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processFile(file);
+    }
   };
 
-  const handleAuthSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulate / execute registration
-    const defaultProfile: UserProfile = {
-      id: "current_user",
-      name: name || "Jonny Guest",
-      age: Number(age) || 26,
-      gender,
-      pronouns,
-      orientation,
-      bio: bio || "Exploring connections in Nairobi...",
-      location_name: locationName,
-      distance_km: 0,
-      images: [imageUrl],
-      interests: ["Coffee", "Art", "Yoga"],
-      is_verified: isVerified,
-      relationship_goals: selectedGoals,
-      massage_affinity: massageAffinity,
-      email,
+  const processFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file (PNG, JPG, etc.).");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setImageUrl(event.target.result as string);
+        setError(""); // Clear error on successful upload
+      }
     };
+    reader.onerror = () => {
+      setError("Failed to read the image file.");
+    };
+    reader.readAsDataURL(file);
+  };
 
-    onSave(defaultProfile);
-    setIsAuthMode(false);
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const updatedProfile: UserProfile = {
+        id: userProfile?.id || "current_user",
+        name,
+        age: Number(age),
+        gender,
+        pronouns,
+        orientation,
+        bio,
+        location_name: locationName,
+        distance_km: 0,
+        images: [imageUrl],
+        interests: userProfile?.interests || ["Art", "Yoga", "Vinyl", "Music"],
+        is_verified: isVerified,
+        relationship_goals: selectedGoals,
+        massage_affinity: massageAffinity,
+        email: userProfile?.email || email || "demo@massagejohnny.com",
+      };
+
+      await onSave(updatedProfile);
+      setIsAuthMode(false);
+    } catch (err: any) {
+      console.error("Error saving profile details", err);
+      setError(err?.message || "Failed to save profile. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDemoBypass = async () => {
+    setError("");
+    setIsLoading(true);
+    try {
+      const demoEmail = email || "demo@massagejohnny.com";
+      const demoUser = await supabaseService.auth.signIn(demoEmail, "demopassword", true);
+      onSave(demoUser);
+      setIsAuthMode(false);
+    } catch (err: any) {
+      console.error("Demo bypass error", err);
+      setError(err?.message || "Failed to launch demo mode.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      if (isSignUp) {
+        const profileDetails: Omit<UserProfile, "id" | "is_verified"> = {
+          name: name || "Jonny Guest",
+          age: Number(age) || 26,
+          gender,
+          pronouns,
+          orientation,
+          bio: bio || "Exploring connections in Nairobi...",
+          location_name: locationName,
+          distance_km: 0,
+          images: [imageUrl],
+          interests: ["Coffee", "Art", "Yoga"],
+          relationship_goals: selectedGoals,
+          massage_affinity: massageAffinity,
+          email,
+        };
+        const newUser = await supabaseService.auth.signUp(email, password, profileDetails);
+        onSave(newUser);
+      } else {
+        const loggedInUser = await supabaseService.auth.signIn(email, password);
+        onSave(loggedInUser);
+      }
+      setIsAuthMode(false);
+    } catch (err: any) {
+      console.error("Auth error", err);
+      setError(err?.message || "Authentication failed. Please verify your email and password.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isAuthMode) {
@@ -144,7 +230,7 @@ export default function Onboarding({ userProfile, onSave, onSignOut, isDemoMode,
           <div className="flex border-b border-brand-lavender/40 pb-2">
             <button
               type="button"
-              onClick={() => setIsSignUp(true)}
+              onClick={() => { setIsSignUp(true); setError(""); }}
               className={`flex-1 text-xs font-display font-semibold uppercase tracking-wider pb-2 transition-colors ${
                 isSignUp ? "text-brand-gold border-b-2 border-brand-gold" : "text-brand-cream/40"
               }`}
@@ -153,7 +239,7 @@ export default function Onboarding({ userProfile, onSave, onSignOut, isDemoMode,
             </button>
             <button
               type="button"
-              onClick={() => setIsSignUp(false)}
+              onClick={() => { setIsSignUp(false); setError(""); }}
               className={`flex-1 text-xs font-display font-semibold uppercase tracking-wider pb-2 transition-colors ${
                 !isSignUp ? "text-brand-gold border-b-2 border-brand-gold" : "text-brand-cream/40"
               }`}
@@ -161,6 +247,62 @@ export default function Onboarding({ userProfile, onSave, onSignOut, isDemoMode,
               Sign In
             </button>
           </div>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-[11px] rounded-xl p-3 leading-relaxed space-y-2">
+              <p className="font-semibold">{error}</p>
+              
+              {/* Special helpful guide for Unconfirmed Emails */}
+              {(error.toLowerCase().includes("confirm") || error.toLowerCase().includes("verification") || error.toLowerCase().includes("not confirmed")) ? (
+                <div className="pt-2 border-t border-red-500/20 text-brand-cream/90 text-[10px] space-y-2">
+                  <p>
+                    A verification link has been sent to <span className="font-mono text-brand-gold">{email}</span>. Please click it in your inbox to verify your account.
+                  </p>
+                  <div className="bg-brand-obsidian/40 p-2 rounded-lg border border-brand-lavender/10 space-y-1.5">
+                    <p className="text-brand-cream/70 text-[9px]">
+                      Don't want to wait? You can immediately enter the app as a local guest:
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleDemoBypass}
+                      className="w-full py-1.5 bg-brand-gold text-brand-obsidian font-display font-bold rounded-lg text-[10px] hover:bg-brand-gold-muted transition-all cursor-pointer text-center"
+                    >
+                      Explore Nairobi in Demo Mode ➔
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* For general sign in / credentials errors */
+                <div className="pt-1.5 border-t border-red-500/20 text-brand-cream/80 text-[10px] space-y-2">
+                  {!isSignUp && (error.toLowerCase().includes("invalid login credentials") || error.toLowerCase().includes("credentials")) && (
+                    <p>
+                      Don't have an account registered with this email yet? Try switching to the
+                      <button 
+                        type="button" 
+                        onClick={() => { setIsSignUp(true); setError(""); }}
+                        className="text-brand-gold font-bold hover:underline mx-1 cursor-pointer"
+                      >
+                        Sign Up
+                      </button>
+                      tab above.
+                    </p>
+                  )}
+                  <div className="bg-brand-obsidian/40 p-2 rounded-lg border border-brand-lavender/10 space-y-1">
+                    <p className="text-brand-cream/60 text-[9px]">
+                      Having trouble with live Supabase auth? Switch to offline demo mode:
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleDemoBypass}
+                      className="w-full py-1 bg-brand-lavender/20 text-brand-gold hover:bg-brand-lavender/30 font-display font-semibold rounded-lg text-[10px] transition-all cursor-pointer text-center"
+                    >
+                      Use Local Demo Mode ➔
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-3.5">
             {/* Email */}
@@ -231,8 +373,10 @@ export default function Onboarding({ userProfile, onSave, onSignOut, isDemoMode,
 
           <button
             type="submit"
-            className="w-full py-3 bg-gradient-to-r from-brand-gold-muted to-brand-gold text-brand-obsidian font-display font-semibold text-xs tracking-wider uppercase rounded-xl shadow-md active:scale-98 transition-all mt-4"
+            disabled={isLoading}
+            className="w-full py-3 bg-gradient-to-r from-brand-gold-muted to-brand-gold text-brand-obsidian font-display font-semibold text-xs tracking-wider uppercase rounded-xl shadow-md active:scale-98 transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
           >
+            {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-brand-obsidian shrink-0" />}
             {isSignUp ? "Create Secure Profile" : "Secure Sign In"}
           </button>
 
@@ -289,39 +433,91 @@ export default function Onboarding({ userProfile, onSave, onSignOut, isDemoMode,
           </button>
         </div>
 
-        {/* Profile Image URL */}
+        {/* Profile Image with Drag and Drop Uploader */}
         <div className="space-y-2">
           <label className="text-[10px] text-brand-cream/50 uppercase tracking-widest font-mono block">
-            Profile Image URL (Portrait)
+            Profile Photo
           </label>
-          <div className="flex gap-3">
-            <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0 bg-brand-obsidian border border-brand-lavender">
-              <img src={imageUrl} alt="preview" className="w-full h-full object-cover" />
+          
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Drag and Drop Zone / Preview */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => document.getElementById("profile-photo-upload")?.click()}
+              className={`flex-1 min-h-[120px] rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all duration-300 relative overflow-hidden ${
+                isDragging
+                  ? "border-brand-gold bg-brand-gold/10"
+                  : "border-brand-lavender/50 bg-brand-obsidian hover:border-brand-gold/50"
+              }`}
+            >
+              <input
+                type="file"
+                id="profile-photo-upload"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageFileChange}
+              />
+              
+              {imageUrl ? (
+                <>
+                  <img
+                    src={imageUrl}
+                    alt="Uploaded preview"
+                    className="absolute inset-0 w-full h-full object-cover opacity-40 hover:opacity-20 transition-opacity"
+                  />
+                  <div className="relative z-10 flex flex-col items-center justify-center space-y-1 text-brand-cream bg-black/40 p-2 rounded-xl backdrop-blur-xs">
+                    <Upload className="w-5 h-5 text-brand-gold" />
+                    <span className="text-[10px] font-semibold">Click or drag to replace photo</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center space-y-2 text-brand-cream/60">
+                  <div className="w-10 h-10 rounded-full bg-brand-lavender/30 flex items-center justify-center text-brand-gold">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-semibold text-brand-cream">Drag & drop your photo</p>
+                    <p className="text-[8px] text-brand-cream/50">or click to browse local files</p>
+                  </div>
+                </div>
+              )}
             </div>
-            <input
-              type="url"
-              required
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="Unsplash portrait URL..."
-              className="flex-1 text-xs px-3 py-2.5 rounded-xl bg-brand-obsidian border border-brand-lavender text-brand-cream focus:outline-none focus:border-brand-gold"
-            />
-          </div>
-          <div className="flex gap-2 justify-end mt-1.5">
-            <button
-              type="button"
-              onClick={() => setImageUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600")}
-              className="text-[9px] text-brand-gold-muted hover:text-brand-gold uppercase tracking-wider"
-            >
-              Preset A
-            </button>
-            <button
-              type="button"
-              onClick={() => setImageUrl("https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600")}
-              className="text-[9px] text-brand-gold-muted hover:text-brand-gold uppercase tracking-wider"
-            >
-              Preset B
-            </button>
+
+            {/* Manual URL input fallback and presets */}
+            <div className="flex-1 flex flex-col justify-between space-y-3">
+              <div className="space-y-1">
+                <span className="text-[9px] text-brand-cream/40 uppercase font-mono block">Or paste image URL</span>
+                <input
+                  type="text"
+                  value={imageUrl.startsWith("data:") ? "" : imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="https://images.unsplash.com/..."
+                  className="w-full text-xs px-3 py-2 rounded-xl bg-brand-obsidian border border-brand-lavender text-brand-cream focus:outline-none focus:border-brand-gold"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-[9px] text-brand-cream/40 uppercase font-mono block">Quick Presets</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600")}
+                    className="flex-1 py-1.5 px-2 rounded bg-brand-lavender/30 text-brand-gold hover:bg-brand-lavender/50 text-[9px] font-semibold transition-all border border-brand-lavender/40"
+                  >
+                    Preset A
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl("https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600")}
+                    className="flex-1 py-1.5 px-2 rounded bg-brand-lavender/30 text-brand-gold hover:bg-brand-lavender/50 text-[9px] font-semibold transition-all border border-brand-lavender/40"
+                  >
+                    Preset B
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -483,11 +679,19 @@ export default function Onboarding({ userProfile, onSave, onSignOut, isDemoMode,
           </div>
         </div>
 
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 text-xs rounded-xl p-3 leading-relaxed mt-2">
+            {error}
+          </div>
+        )}
+
         <button
           type="submit"
-          className="w-full py-3 bg-gradient-to-r from-brand-gold-muted to-brand-gold text-brand-obsidian font-display font-semibold text-sm tracking-wide rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all mt-4"
+          disabled={isLoading}
+          className="w-full py-3 bg-gradient-to-r from-brand-gold-muted to-brand-gold text-brand-obsidian font-display font-semibold text-sm tracking-wide rounded-xl shadow-lg hover:brightness-110 active:scale-[0.98] transition-all mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
           id="profile-save-btn"
         >
+          {isLoading && <Loader2 className="w-4 h-4 animate-spin text-brand-obsidian shrink-0" />}
           Save Profile Card
         </button>
       </form>
