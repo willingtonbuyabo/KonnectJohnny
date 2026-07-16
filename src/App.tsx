@@ -15,6 +15,7 @@ import Onboarding from "./components/Onboarding";
 import WelcomePortal from "./components/WelcomePortal";
 import Filters from "./components/Filters";
 import PrivacySettings from "./components/PrivacySettings";
+import ConfettiCanvas from "./components/ConfettiCanvas";
 import { motion, AnimatePresence } from "motion/react";
 import { ShieldCheck, Heart, Sparkles, MessageSquare, X, Flower, ChevronRight, AlertCircle, EyeOff } from "lucide-react";
 
@@ -459,6 +460,9 @@ export default function App() {
       <AnimatePresence>
         {matchSuccessOverlay.show && matchSuccessOverlay.profile && (
           <div className="fixed inset-0 z-50 bg-brand-obsidian/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center select-none">
+            {/* Confetti Animation Celebration */}
+            <ConfettiCanvas active={matchSuccessOverlay.show} />
+
             {/* Sparkles backdrop */}
             <div className="absolute top-1/4 w-72 h-72 bg-brand-gold/15 rounded-full blur-3xl pointer-events-none" />
 

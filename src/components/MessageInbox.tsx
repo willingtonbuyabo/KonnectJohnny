@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { MessageSquare, ShieldAlert, Send, ArrowLeft, ShieldCheck, Phone, Video, Flower, Info, Compass } from "lucide-react";
+import { MessageSquare, ShieldAlert, Send, ArrowLeft, ShieldCheck, Phone, Video, Flower, Info, Compass, Check, CheckCheck } from "lucide-react";
 import { Match, Message, Profile } from "../types";
 import { supabaseService } from "../supabaseService";
 
@@ -51,6 +51,9 @@ export default function MessageInbox({ matches, onRefresh, currentUserProfile }:
   const loadMessages = async () => {
     if (!selectedMatch) return;
     try {
+      // Mark received messages as read
+      await supabaseService.messages.markMessagesAsRead(selectedMatch.id);
+      
       const msgs = await supabaseService.messages.getMessages(selectedMatch.id);
       setMessages(msgs);
       scrollToBottom();
@@ -81,7 +84,7 @@ export default function MessageInbox({ matches, onRefresh, currentUserProfile }:
         receiver_id: selectedMatch.user_id,
         text: currentText,
         created_at: new Date().toISOString(),
-        is_read: true,
+        is_read: false, // Initially unread until recipient opens it
       };
       setMessages((prev) => [...prev, optMsg]);
       scrollToBottom();
@@ -305,9 +308,23 @@ export default function MessageInbox({ matches, onRefresh, currentUserProfile }:
                     }`}
                   >
                     <p>{msg.text}</p>
-                    <span className={`text-[8px] block text-right mt-1.5 ${isMe ? "text-brand-obsidian/60" : "text-brand-cream/40"}`}>
-                      {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <div className="flex items-center justify-end gap-1 mt-1.5">
+                      <span className={`text-[8px] ${isMe ? "text-brand-obsidian/60" : "text-brand-cream/40"}`}>
+                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {isMe && (
+                        <span className="flex items-center shrink-0">
+                          {msg.is_read ? (
+                            <span className="flex items-center gap-0.5 text-emerald-900/80 font-display text-[7px] font-bold uppercase tracking-wider">
+                              <CheckCheck className="w-3 h-3 text-emerald-800 stroke-[3]" />
+                              {msg.read_at ? "Seen" : "Read"}
+                            </span>
+                          ) : (
+                            <Check className="w-3 h-3 text-brand-obsidian/45 stroke-[2.5]" />
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

@@ -6,13 +6,13 @@
   --font-display: "Space Grotesk", sans-serif;
   --font-serif: "Playfair Display", Georgia, serif;
   
-  /* Brand color tokens: Elegant Dark theme (luxurious black, deep graphite, rich gold and pure cream) */
-  --color-brand-obsidian: #0a0a0a;
-  --color-brand-plum: #0f0f0f;
-  --color-brand-lavender: #1a1a1a;
-  --color-brand-gold: #C5A059;
-  --color-brand-gold-muted: #9e7f44;
-  --color-brand-cream: #ffffff;
+  /* Brand color tokens: Elegant Dark theme (luxurious dark purple, rich gold and pure cream with vibrant pride accents) */
+  --color-brand-obsidian: #0e051b;
+  --color-brand-plum: #17092c;
+  --color-brand-lavender: #2d134f;
+  --color-brand-gold: #D4AF37;
+  --color-brand-gold-muted: #B8860B;
+  --color-brand-cream: #FFFDF9;
   --color-brand-rose: #f43f5e;
 }
 
@@ -84,3 +84,76 @@ body {
   background-size: 200% 100%;
   animation: gold-shimmer 3s infinite linear;
 }
+
+@keyframes pride-rotate {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.pride-glowing-halo {
+  background: linear-gradient(
+    45deg,
+    #ff007f, /* vibrant pink/red */
+    #ff7f00, /* orange */
+    #ffeb00, /* yellow */
+    #00ff7f, /* green */
+    #007fff, /* blue */
+    #7f00ff  /* violet */
+  );
+  background-size: 300% 300%;
+  animation: pride-rotate 10s infinite ease-in-out;
+}
+
+.pride-border {
+  position: relative;
+}
+
+.pride-border::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  padding: 3px;
+  background: linear-gradient(
+    45deg,
+    #ff0055,
+    #ff7700,
+    #ffeb3b,
+    #00ff66,
+    #00b7ff,
+    #9900ff
+  );
+  background-size: 300% 300%;
+  animation: pride-rotate 8s infinite linear;
+  -webkit-mask: 
+     linear-gradient(#fff 0 0) content-box, 
+     linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.text-gradient-pride {
+  background: linear-gradient(
+    to right,
+    #ff3366,
+    #ff9933,
+    #ffff33,
+    #33cc66,
+    #3399ff,
+    #9933ff
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% auto;
+  animation: pride-rotate 6s infinite linear;
+}
+

@@ -48,6 +48,7 @@ export interface Message {
   text: string;
   created_at: string;
   is_read: boolean;
+  read_at?: string;
 }
 
 export interface AppPrivacySettings {

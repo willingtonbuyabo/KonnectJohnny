@@ -521,6 +521,65 @@ export const supabaseService = {
       return allMessages.filter((m) => m.match_id === matchId).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     },
 
+    async markMessagesAsRead(matchId: string): Promise<void> {
+      const currentUser = await supabaseService.auth.getCurrentUser();
+      const currentUserId = currentUser ? currentUser.id : "current_user";
+
+      if (supabase) {
+        try {
+          // Attempt to update both is_read and read_at.
+          // If read_at doesn't exist yet as a column, this will fail, and we fall back.
+          const { error } = await supabase
+            .from("messages")
+            .update({ is_read: true, read_at: new Date().toISOString() })
+            .eq("match_id", matchId)
+            .eq("receiver_id", currentUserId)
+            .eq("is_read", false);
+
+          if (error) {
+            // Fallback to only is_read if column is missing
+            await supabase
+              .from("messages")
+              .update({ is_read: true })
+              .eq("match_id", matchId)
+              .eq("receiver_id", currentUserId)
+              .eq("is_read", false);
+          }
+        } catch (e) {
+          console.error("Supabase markMessagesAsRead error, falling back", e);
+        }
+        return;
+      }
+
+      // Demo mode
+      const messages = getLocalStorageItem<Message[]>(STORAGE_KEYS.MESSAGES, []);
+      let updated = false;
+      const updatedMessages = messages.map((m) => {
+        if (m.match_id === matchId && m.receiver_id === currentUserId && !m.is_read) {
+          updated = true;
+          return { ...m, is_read: true, read_at: new Date().toISOString() };
+        }
+        return m;
+      });
+
+      if (updated) {
+        setLocalStorageItem(STORAGE_KEYS.MESSAGES, updatedMessages);
+        
+        // Update unread count in matches list
+        const matchesList = getLocalStorageItem<Match[]>(STORAGE_KEYS.MATCHES, []);
+        const updatedMatches = matchesList.map((m) => {
+          if (m.id === matchId) {
+            return { ...m, unread_count: 0 };
+          }
+          return m;
+        });
+        setLocalStorageItem(STORAGE_KEYS.MATCHES, updatedMatches);
+        
+        // Dispatch custom event to notify messages changed
+        window.dispatchEvent(new CustomEvent("local_messages_updated", { detail: { matchId } }));
+      }
+    },
+
     async sendMessage(matchId: string, receiverId: string, text: string): Promise<Message> {
       const currentUser = await supabaseService.auth.getCurrentUser();
       const currentUserId = currentUser ? currentUser.id : "current_user";
@@ -543,14 +602,15 @@ export const supabaseService = {
 
       // Demo mode
       const messages = getLocalStorageItem<Message[]>(STORAGE_KEYS.MESSAGES, []);
+      const newMsgId = "msg_" + Math.random().toString(36).substring(2, 11);
       const newMsg: Message = {
-        id: "msg_" + Math.random().toString(36).substring(2, 11),
+        id: newMsgId,
         match_id: matchId,
         sender_id: currentUserId,
         receiver_id: receiverId,
         text,
         created_at: new Date().toISOString(),
-        is_read: true,
+        is_read: false, // Starts as unread for the recipient!
       };
 
       setLocalStorageItem(STORAGE_KEYS.MESSAGES, [...messages, newMsg]);
@@ -570,7 +630,25 @@ export const supabaseService = {
       });
       setLocalStorageItem(STORAGE_KEYS.MATCHES, updatedMatches);
 
-      // Trigger realistic mock replies from the match to simulate a lively, high fidelity chat experience
+      // Simulate the recipient reading the message after 1.2 seconds!
+      setTimeout(() => {
+        const currentMessages = getLocalStorageItem<Message[]>(STORAGE_KEYS.MESSAGES, []);
+        let readUpdated = false;
+        const readUpdatedMessages = currentMessages.map((m) => {
+          if (m.id === newMsgId && !m.is_read) {
+            readUpdated = true;
+            return { ...m, is_read: true, read_at: new Date().toISOString() };
+          }
+          return m;
+        });
+
+        if (readUpdated) {
+          setLocalStorageItem(STORAGE_KEYS.MESSAGES, readUpdatedMessages);
+          window.dispatchEvent(new CustomEvent("local_messages_updated", { detail: { matchId } }));
+        }
+      }, 1200);
+
+      // Trigger realistic mock replies from the match to simulate a lively, high fidelity chat experience (after 2.5 seconds)
       setTimeout(() => {
         const currentMessages = getLocalStorageItem<Message[]>(STORAGE_KEYS.MESSAGES, []);
         // Only trigger a reply if they sent a text (and not double-triggering)
@@ -616,7 +694,7 @@ export const supabaseService = {
           // Custom event to notify components that messages changed
           window.dispatchEvent(new CustomEvent("local_messages_updated", { detail: { matchId } }));
         }
-      }, 1800);
+      }, 2600);
 
       return newMsg;
     },

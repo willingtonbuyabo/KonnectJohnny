@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from "react";
-import { ShieldCheck, MapPin, Info, ArrowLeft, Heart, Flower, Sparkles, Check, Lock } from "lucide-react";
+import { ShieldCheck, MapPin, Info, ArrowLeft, Heart, Flower, Sparkles, Check, Lock, Flag, AlertTriangle } from "lucide-react";
 import { Profile } from "../types";
 
 interface ProfileCardProps {
@@ -18,6 +18,12 @@ interface ProfileCardProps {
 export default function ProfileCard({ profile, onLike, onPass, blurForUnverified, isCurrentUserVerified }: ProfileCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Reporting feature states
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportNotes, setReportNotes] = useState("");
+  const [isReportSubmitted, setIsReportSubmitted] = useState(false);
 
   const imagesCount = profile.images.length;
 
@@ -165,100 +171,238 @@ export default function ProfileCard({ profile, onLike, onPass, blurForUnverified
         {/* Expanded Profile View Overlay */}
         {isExpanded && (
           <div className="absolute inset-0 bg-brand-plum overflow-y-auto p-6 text-brand-cream flex flex-col z-30 transition-all duration-300">
-            {/* Header back button */}
-            <div className="flex items-center justify-between mb-4 border-b border-brand-lavender/40 pb-3">
-              <button
-                onClick={() => setIsExpanded(false)}
-                className="flex items-center gap-1 text-xs text-brand-gold-muted hover:text-brand-gold font-sans font-medium transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to swiping
-              </button>
-              {profile.is_verified && (
-                <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-500/20 to-emerald-500/5 border border-emerald-500/40 text-emerald-300 rounded-full px-2.5 py-0.5 text-[9px] uppercase tracking-wider font-sans font-semibold shadow-sm animate-verified-glow">
-                  <ShieldCheck className="w-3 h-3 text-emerald-400" /> Verified
-                </div>
-              )}
-            </div>
-
-            {/* Expanded Bio details */}
-            <div className="space-y-4 flex-1">
-              <div>
-                <h4 className="font-serif font-bold text-2xl tracking-tight">
-                  {profile.name}, {profile.age}
-                </h4>
-                <p className="text-xs text-brand-cream/50 font-sans mt-0.5">{profile.gender} • {profile.orientation}</p>
-              </div>
-
-              <div className="space-y-1 bg-brand-obsidian/40 border border-brand-lavender/40 rounded-2xl p-4">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">About Me</span>
-                <p className="text-sm text-brand-cream/90 leading-relaxed mt-1">
-                  {profile.bio}
-                </p>
-              </div>
-
-              {/* Massage Jonny Wellness Tribute Section */}
-              {profile.massage_affinity && (
-                <div className="bg-gradient-to-br from-brand-lavender/40 to-brand-plum border border-brand-gold/30 rounded-2xl p-4 space-y-2">
-                  <span className="flex items-center gap-1 text-[10px] uppercase font-mono tracking-widest text-brand-gold font-semibold">
-                    <Flower className="w-4 h-4 text-brand-gold" />
-                    Jonny's Healing Space
-                  </span>
-                  <p className="text-xs text-brand-cream/80 leading-relaxed">
-                    This user loves wellness! Their preference: <strong className="text-brand-gold">{profile.massage_affinity}</strong>. Connect and book a soothing couple's session at Massage Jonny Westlands!
-                  </p>
-                </div>
-              )}
-
-              {/* Interests Tags */}
-              <div className="space-y-2">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">Passions</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {profile.interests.map((interest) => (
-                    <span
-                      key={interest}
-                      className="text-xs bg-brand-lavender/30 border border-brand-lavender/60 text-brand-cream px-3 py-1 rounded-full font-medium"
+            {isReporting ? (
+              <div className="flex-1 flex flex-col h-full justify-between space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-brand-lavender/40 pb-3">
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-red-400" />
+                      <h3 className="font-serif font-black text-base text-brand-cream">Report Account</h3>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setIsReporting(false);
+                        setReportReason("");
+                        setReportNotes("");
+                      }}
+                      className="text-xs text-brand-cream/50 hover:text-brand-cream"
                     >
-                      {interest}
-                    </span>
-                  ))}
-                </div>
-              </div>
+                      Cancel
+                    </button>
+                  </div>
 
-              {/* Goals */}
-              <div className="space-y-2 pt-2">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">Looking For</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {profile.relationship_goals.map((goal) => (
-                    <span
-                      key={goal}
-                      className="text-xs bg-brand-gold/10 border border-brand-gold/30 text-brand-gold px-3 py-1 rounded-full font-medium"
+                  {isReportSubmitted ? (
+                    <div className="space-y-4 py-8 text-center flex flex-col items-center">
+                      <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 mb-2 animate-bounce">
+                        <Check className="w-6 h-6 stroke-[3]" />
+                      </div>
+                      <h4 className="font-serif font-bold text-base text-brand-cream">Flagged Successfully</h4>
+                      <p className="text-[11px] text-brand-cream/70 max-w-xs leading-relaxed">
+                        We take community safety extremely seriously. Your discreet report for <strong className="text-brand-gold">{profile.name}</strong> has been logged. Admin review will happen within 24 hours. This user will now be auto-passed.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setIsReporting(false);
+                          setIsReportSubmitted(false);
+                          setIsExpanded(false);
+                          setReportReason("");
+                          setReportNotes("");
+                          onPass(); // Dismiss profile
+                        }}
+                        className="w-full py-2.5 bg-brand-gold text-brand-obsidian rounded-xl font-display font-semibold text-xs tracking-wider uppercase flex items-center justify-center gap-1.5 shadow-md mt-4 active:scale-95 transition-all"
+                      >
+                        Dismiss & Continue Swiping
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3.5">
+                      <p className="text-[11px] text-brand-cream/60 leading-relaxed">
+                        To maintain Nairobi's safest queer space, please report any violations of safety, harassment, fake profiles, or solicitation.
+                      </p>
+
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-mono tracking-widest text-brand-gold block">
+                          Reason for Report
+                        </label>
+                        <div className="grid grid-cols-1 gap-1.5">
+                          {[
+                            "Fake profile / Catfishing",
+                            "Harassment or Abusive behavior",
+                            "Inappropriate or stolen photos",
+                            "Commercial soliciting or Scam",
+                            "Underage or offensive bio details",
+                            "Extortion or safety threat"
+                          ].map((reason) => (
+                            <button
+                              key={reason}
+                              type="button"
+                              onClick={() => setReportReason(reason)}
+                              className={`w-full py-2 px-3 text-left rounded-xl text-[11px] border transition-all ${
+                                reportReason === reason
+                                  ? "bg-red-500/15 border-red-500/50 text-red-400 font-semibold"
+                                  : "bg-brand-obsidian/40 border-brand-lavender/30 text-brand-cream/70 hover:border-brand-lavender/60"
+                              }`}
+                            >
+                              {reason}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-mono tracking-widest text-brand-gold block">
+                          Additional Details (Optional)
+                        </label>
+                        <textarea
+                          value={reportNotes}
+                          onChange={(e) => setReportNotes(e.target.value)}
+                          placeholder="Provide specific notes so our safety moderators can investigate details immediately..."
+                          className="w-full h-18 bg-brand-obsidian/40 border border-brand-lavender/30 rounded-xl p-2.5 text-xs text-brand-cream/90 placeholder-brand-cream/30 focus:outline-none focus:border-brand-gold/50 resize-none font-sans"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {!isReportSubmitted && (
+                  <div className="flex gap-3 pt-3 border-t border-brand-lavender/30">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsReporting(false);
+                        setReportReason("");
+                        setReportNotes("");
+                      }}
+                      className="flex-1 py-2 bg-brand-lavender/20 border border-brand-lavender/40 text-brand-cream/80 rounded-xl text-xs font-semibold hover:bg-brand-lavender/30 transition-all"
                     >
-                      {goal}
-                    </span>
-                  ))}
-                </div>
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!reportReason) return;
+                        setIsReportSubmitted(true);
+                      }}
+                      disabled={!reportReason}
+                      className={`flex-1 py-2 rounded-xl text-xs font-semibold tracking-wide flex items-center justify-center gap-1.5 transition-all ${
+                        reportReason
+                          ? "bg-red-500 text-brand-cream hover:bg-red-600 shadow-md shadow-red-500/20"
+                          : "bg-brand-lavender/20 text-brand-cream/25 cursor-not-allowed"
+                      }`}
+                    >
+                      <Flag className="w-3.5 h-3.5" />
+                      Submit Report
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Header back button */}
+                <div className="flex items-center justify-between mb-4 border-b border-brand-lavender/40 pb-3">
+                  <button
+                    onClick={() => setIsExpanded(false)}
+                    className="flex items-center gap-1 text-xs text-brand-gold-muted hover:text-brand-gold font-sans font-medium transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to swiping
+                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {profile.is_verified && (
+                      <div className="flex items-center gap-1 bg-gradient-to-r from-emerald-500/20 to-emerald-500/5 border border-emerald-500/40 text-emerald-300 rounded-full px-2.5 py-0.5 text-[9px] uppercase tracking-wider font-sans font-semibold shadow-sm animate-verified-glow">
+                        <ShieldCheck className="w-3 h-3 text-emerald-400" /> Verified
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setIsReporting(true)}
+                      className="flex items-center gap-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-full px-2 py-0.5 text-[9px] uppercase tracking-wider font-sans font-semibold transition-all duration-300 shadow-sm"
+                      title="Report User for Safety"
+                    >
+                      <Flag className="w-3 h-3" /> Report
+                    </button>
+                  </div>
+                </div>
 
-            {/* Quick action triggers inside info */}
-            <div className="flex justify-center gap-4 mt-6 pt-4 border-t border-brand-lavender/40">
-              <button
-                onClick={onPass}
-                className="w-12 h-12 rounded-full bg-brand-lavender/30 border border-brand-lavender text-brand-cream/70 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 flex items-center justify-center transition-all duration-300 active:scale-95"
-                title="Pass"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={onLike}
-                className="flex-1 bg-gradient-to-r from-brand-gold-muted to-brand-gold text-brand-obsidian h-12 rounded-2xl font-display font-semibold text-sm tracking-wide flex items-center justify-center gap-1.5 shadow-lg active:scale-98 transition-all"
-                title="Swipe Right"
-              >
-                <Heart className="w-4 h-4 fill-brand-obsidian" />
-                Connect Now
-              </button>
-            </div>
+                {/* Expanded Bio details */}
+                <div className="space-y-4 flex-1">
+                  <div>
+                    <h4 className="font-serif font-bold text-2xl tracking-tight">
+                      {profile.name}, {profile.age}
+                    </h4>
+                    <p className="text-xs text-brand-cream/50 font-sans mt-0.5">{profile.gender} • {profile.orientation}</p>
+                  </div>
+
+                  <div className="space-y-1 bg-brand-obsidian/40 border border-brand-lavender/40 rounded-2xl p-4">
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">About Me</span>
+                    <p className="text-sm text-brand-cream/90 leading-relaxed mt-1">
+                      {profile.bio}
+                    </p>
+                  </div>
+
+                  {/* Massage Jonny Wellness Tribute Section */}
+                  {profile.massage_affinity && (
+                    <div className="bg-gradient-to-br from-brand-lavender/40 to-brand-plum border border-brand-gold/30 rounded-2xl p-4 space-y-2">
+                      <span className="flex items-center gap-1 text-[10px] uppercase font-mono tracking-widest text-brand-gold font-semibold">
+                        <Flower className="w-4 h-4 text-brand-gold" />
+                        Jonny's Healing Space
+                      </span>
+                      <p className="text-xs text-brand-cream/80 leading-relaxed">
+                        This user loves wellness! Their preference: <strong className="text-brand-gold">{profile.massage_affinity}</strong>. Connect and book a soothing couple's session at Massage Jonny Westlands!
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Interests Tags */}
+                  <div className="space-y-2">
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">Passions</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {profile.interests.map((interest) => (
+                        <span
+                          key={interest}
+                          className="text-xs bg-brand-lavender/30 border border-brand-lavender/60 text-brand-cream px-3 py-1 rounded-full font-medium"
+                        >
+                          {interest}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Goals */}
+                  <div className="space-y-2 pt-2">
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">Looking For</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {profile.relationship_goals.map((goal) => (
+                        <span
+                          key={goal}
+                          className="text-xs bg-brand-gold/10 border border-brand-gold/30 text-brand-gold px-3 py-1 rounded-full font-medium"
+                        >
+                          {goal}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick action triggers inside info */}
+                <div className="flex justify-center gap-4 mt-6 pt-4 border-t border-brand-lavender/40">
+                  <button
+                    onClick={onPass}
+                    className="w-12 h-12 rounded-full bg-brand-lavender/30 border border-brand-lavender text-brand-cream/70 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 flex items-center justify-center transition-all duration-300 active:scale-95"
+                    title="Pass"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={onLike}
+                    className="flex-1 bg-gradient-to-r from-brand-gold-muted to-brand-gold text-brand-obsidian h-12 rounded-2xl font-display font-semibold text-sm tracking-wide flex items-center justify-center gap-1.5 shadow-lg active:scale-98 transition-all"
+                    title="Swipe Right"
+                  >
+                    <Heart className="w-4 h-4 fill-brand-obsidian" />
+                    Connect Now
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

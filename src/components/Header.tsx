@@ -37,7 +37,7 @@ export default function Header({ privacySettings, activeTab, onOpenPrivacy, isDe
             </div>
             <div className="flex flex-col">
               <span className="font-serif font-semibold text-lg text-brand-cream tracking-tight flex items-center gap-1 leading-none" id="header-title">
-                Jonny Match
+                KonnectJohnny
               </span>
               <span className="text-[9px] font-sans text-brand-gold-muted uppercase tracking-widest leading-none mt-0.5">
                 by Massage Jonny
