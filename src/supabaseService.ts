@@ -131,11 +131,36 @@ const STORAGE_KEYS = {
  * );
  */
 
+// Helper to track and handle Supabase network/connection errors dynamically
+let hasConnectionError = false;
+
+export const setConnectionError = (val: boolean) => {
+  if (val && !hasConnectionError) {
+    console.warn("Supabase connection error detected. Automatically falling back to local database / demo mode to avoid further network failures.");
+  }
+  hasConnectionError = val;
+};
+
+export const handleConnectionError = (e: any) => {
+  if (!e) return;
+  const msg = String(e.message || e).toLowerCase();
+  if (
+    msg.includes("fetch") || 
+    msg.includes("network") || 
+    msg.includes("cors") || 
+    msg.includes("unreachable") ||
+    msg.includes("failed to fetch") ||
+    e.name === "TypeError"
+  ) {
+    setConnectionError(true);
+  }
+};
+
 // Helper to check if we are in Demo/Local mode
 export const isDemoMode = () => {
   if (typeof window === "undefined") return true;
   const forceDemo = localStorage.getItem("jonny_match_use_demo_mode") === "true";
-  return !supabase || forceDemo;
+  return !supabase || forceDemo || hasConnectionError;
 };
 
 // Set up robust localStorage-based storage engine for Demo mode
@@ -269,6 +294,7 @@ export const supabaseService = {
           return defaultProfile;
         } catch (e) {
           console.error("Supabase auth error, falling back", e);
+          handleConnectionError(e);
         }
       }
       
@@ -411,7 +437,12 @@ export const supabaseService = {
     async signOut(): Promise<void> {
       localStorage.setItem("jonny_match_use_demo_mode", "false");
       if (supabase) {
-        await supabase.auth.signOut();
+        try {
+          await supabase.auth.signOut();
+        } catch (e) {
+          console.warn("Supabase signOut error:", e);
+          handleConnectionError(e);
+        }
       }
       // Demo: just clear login session or keep local profile
     },
@@ -464,6 +495,7 @@ export const supabaseService = {
           }) as Profile[];
         } catch (e) {
           console.warn("Supabase profiles query failed or unavailable, falling back to local mocks:", e);
+          handleConnectionError(e);
         }
       }
 
@@ -528,6 +560,7 @@ export const supabaseService = {
           }
         } catch (dbErr) {
           console.warn("Exception during profile update in database, falling back:", dbErr);
+          handleConnectionError(dbErr);
         }
 
         const updated = { ...currentUser, ...profileData };
@@ -602,6 +635,7 @@ export const supabaseService = {
           return { is_match: false };
         } catch (dbErr) {
           console.warn("Supabase performSwipe database error, falling back to local swipe engine", dbErr);
+          handleConnectionError(dbErr);
         }
       }
 
@@ -693,6 +727,7 @@ export const supabaseService = {
           return matches;
         } catch (e) {
           console.warn("Supabase getMatches query failed, falling back to local matches:", e);
+          handleConnectionError(e);
         }
       }
 
@@ -716,6 +751,7 @@ export const supabaseService = {
           return data as Message[];
         } catch (e) {
           console.warn("Supabase getMessages error, falling back to local chat history:", e);
+          handleConnectionError(e);
         }
       }
 
@@ -750,6 +786,7 @@ export const supabaseService = {
           }
         } catch (e) {
           console.warn("Supabase markMessagesAsRead error, falling back locally:", e);
+          handleConnectionError(e);
         }
         return;
       }
@@ -804,6 +841,7 @@ export const supabaseService = {
           return data as Message;
         } catch (e) {
           console.warn("Supabase sendMessage error, saving message to local fallback database:", e);
+          handleConnectionError(e);
         }
       }
 
