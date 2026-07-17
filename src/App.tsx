@@ -360,6 +360,7 @@ export default function App() {
                     filters={filters}
                     blurForUnverified={privacySettings.blur_for_unverified}
                     isCurrentUserVerified={currentUser.is_verified}
+                    currentUserInterests={currentUser.interests}
                   />
                 </motion.div>
               )}

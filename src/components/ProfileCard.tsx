@@ -13,9 +13,17 @@ interface ProfileCardProps {
   onPass: () => void;
   blurForUnverified: boolean;
   isCurrentUserVerified: boolean;
+  currentUserInterests?: string[];
 }
 
-export default function ProfileCard({ profile, onLike, onPass, blurForUnverified, isCurrentUserVerified }: ProfileCardProps) {
+export default function ProfileCard({ 
+  profile, 
+  onLike, 
+  onPass, 
+  blurForUnverified, 
+  isCurrentUserVerified,
+  currentUserInterests = []
+}: ProfileCardProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -26,6 +34,24 @@ export default function ProfileCard({ profile, onLike, onPass, blurForUnverified
   const [isReportSubmitted, setIsReportSubmitted] = useState(false);
 
   const imagesCount = profile.images.length;
+
+  // Compatibility matching logic based on matching interests
+  const sharedInterests = profile.interests.filter(interest =>
+    currentUserInterests.some(userInterest =>
+      userInterest.toLowerCase().trim() === interest.toLowerCase().trim()
+    )
+  );
+
+  let compatibilityLabel = "";
+  let compatibilityStyle = "";
+
+  if (sharedInterests.length >= 3) {
+    compatibilityLabel = "High Match";
+    compatibilityStyle = "bg-brand-gold/20 border border-brand-gold text-brand-gold animate-pulse";
+  } else if (sharedInterests.length > 0) {
+    compatibilityLabel = "Shared Interests";
+    compatibilityStyle = "bg-brand-lavender/30 border border-brand-lavender/60 text-brand-cream/90";
+  }
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -108,6 +134,15 @@ export default function ProfileCard({ profile, onLike, onPass, blurForUnverified
         {/* Front Info Card details Overlay */}
         {!isExpanded && (
           <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col justify-end text-brand-cream z-20">
+            {/* Compatibility Indicator */}
+            {compatibilityLabel && (
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-sans font-bold uppercase tracking-wider mb-2.5 w-fit shadow-md border backdrop-blur-md ${compatibilityStyle}`} id="compatibility-indicator">
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span>{compatibilityLabel}</span>
+                <span className="opacity-75 font-medium normal-case">({sharedInterests.length} shared)</span>
+              </div>
+            )}
+
             {/* Badges row */}
             <div className="flex flex-wrap gap-1.5 mb-3">
               <span className="text-[10px] font-sans font-semibold tracking-wider uppercase bg-brand-lavender/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-brand-gold/20 text-brand-gold">
@@ -356,14 +391,24 @@ export default function ProfileCard({ profile, onLike, onPass, blurForUnverified
                   <div className="space-y-2">
                     <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">Passions</span>
                     <div className="flex flex-wrap gap-1.5">
-                      {profile.interests.map((interest) => (
-                        <span
-                          key={interest}
-                          className="text-xs bg-brand-lavender/30 border border-brand-lavender/60 text-brand-cream px-3 py-1 rounded-full font-medium"
-                        >
-                          {interest}
-                        </span>
-                      ))}
+                      {profile.interests.map((interest) => {
+                        const isShared = currentUserInterests.some(
+                          (ui) => ui.toLowerCase().trim() === interest.toLowerCase().trim()
+                        );
+                        return (
+                          <span
+                            key={interest}
+                            className={`text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1 transition-all ${
+                              isShared
+                                ? "bg-brand-gold/15 border border-brand-gold text-brand-gold font-semibold shadow-xs"
+                                : "bg-brand-lavender/30 border border-brand-lavender/60 text-brand-cream"
+                            }`}
+                          >
+                            {isShared && <Sparkles className="w-3.5 h-3.5 text-brand-gold animate-pulse shrink-0" />}
+                            {interest}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
 

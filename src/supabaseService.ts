@@ -52,6 +52,13 @@ const isValidSupabaseUrl = (url: string): boolean => {
   }
 };
 
+// Helper to check if a string is a valid UUID
+const isValidUuid = (id: string): boolean => {
+  if (!id) return false;
+  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return regex.test(id);
+};
+
 // Initialize real Supabase client if credentials are valid and provided
 export const supabase = 
   supabaseUrl && 
@@ -125,7 +132,11 @@ const STORAGE_KEYS = {
  */
 
 // Helper to check if we are in Demo/Local mode
-export const isDemoMode = () => !supabase;
+export const isDemoMode = () => {
+  if (typeof window === "undefined") return true;
+  const forceDemo = localStorage.getItem("jonny_match_use_demo_mode") === "true";
+  return !supabase || forceDemo;
+};
 
 // Set up robust localStorage-based storage engine for Demo mode
 const getLocalStorageItem = <T>(key: string, defaultValue: T): T => {
@@ -412,7 +423,7 @@ export const supabaseService = {
       const currentUser = await supabaseService.auth.getCurrentUser();
       const currentUserId = currentUser ? currentUser.id : "current_user";
 
-      if (supabase) {
+      if (supabase && !isDemoMode() && isValidUuid(currentUserId)) {
         try {
           // 1. Fetch swiped IDs first to exclude them
           const { data: swipes } = await supabase
@@ -423,11 +434,17 @@ export const supabaseService = {
           const swipedIds = swipes ? swipes.map((s) => s.swipee_id) : [];
           swipedIds.push(currentUserId); // exclude self
 
+          // Filter out invalid UUIDs to prevent PostgreSQL syntax cast errors
+          const validSwipedIds = swipedIds.filter(id => isValidUuid(id));
+
           // 2. Fetch profiles with filters
           let query = supabase
             .from("profiles")
-            .select("*")
-            .not("id", "in", `(${swipedIds.join(",")})`);
+            .select("*");
+
+          if (validSwipedIds.length > 0) {
+            query = query.not("id", "in", `(${validSwipedIds.join(",")})`);
+          }
 
           // Apply age range
           query = query.gte("age", filters.age_range[0]).lte("age", filters.age_range[1]);
@@ -446,7 +463,7 @@ export const supabaseService = {
             return distance <= filters.max_distance;
           }) as Profile[];
         } catch (e) {
-          console.error("Supabase profiles query error, using local mock", e);
+          console.warn("Supabase profiles query failed or unavailable, falling back to local mocks:", e);
         }
       }
 
@@ -471,10 +488,30 @@ export const supabaseService = {
     },
 
     async updateProfile(profileData: Partial<UserProfile>): Promise<UserProfile> {
-      const currentUser = await supabaseService.auth.getCurrentUser();
-      if (!currentUser) throw new Error("No current user found");
+      let currentUser = await supabaseService.auth.getCurrentUser();
+      
+      if (!currentUser) {
+        // Construct a safe default user profile if none exists yet
+        currentUser = {
+          id: profileData.id || "current_user",
+          name: profileData.name || "Jonny Guest",
+          age: profileData.age || 26,
+          gender: profileData.gender || "Non-binary",
+          pronouns: profileData.pronouns || "They/Them",
+          orientation: profileData.orientation || "Queer",
+          bio: profileData.bio || "Exploring connections...",
+          images: profileData.images || [],
+          interests: profileData.interests || [],
+          location_name: profileData.location_name || "Kilimani, Nairobi",
+          distance_km: profileData.distance_km || 0,
+          is_verified: profileData.is_verified || false,
+          relationship_goals: profileData.relationship_goals || [],
+          massage_affinity: profileData.massage_affinity || "",
+          email: profileData.email || "demo@massagejohnny.com"
+        };
+      }
 
-      if (supabase) {
+      if (supabase && !isDemoMode() && isValidUuid(currentUser.id)) {
         try {
           // Use upsert to handle both insert and update gracefully
           const { error } = await supabase
@@ -511,57 +548,61 @@ export const supabaseService = {
       const currentUser = await supabaseService.auth.getCurrentUser();
       const currentUserId = currentUser ? currentUser.id : "current_user";
 
-      if (supabase) {
-        // 1. Record swipe in database
-        const { error: swipeError } = await supabase
-          .from("swipes")
-          .insert({
-            swiper_id: currentUserId,
-            swipee_id: swipeeId,
-            action,
-          });
-
-        if (swipeError) throw swipeError;
-
-        // 2. Check if the swipee has liked the swiper back (mutual swipe)
-        if (action === "like" || action === "superlike") {
-          const { data: mutualSwipe } = await supabase
+      if (supabase && !isDemoMode() && isValidUuid(currentUserId) && isValidUuid(swipeeId)) {
+        try {
+          // 1. Record swipe in database
+          const { error: swipeError } = await supabase
             .from("swipes")
-            .select("*")
-            .eq("swiper_id", swipeeId)
-            .eq("swipee_id", currentUserId)
-            .in("action", ["like", "superlike"])
-            .single();
+            .insert({
+              swiper_id: currentUserId,
+              swipee_id: swipeeId,
+              action,
+            });
 
-          if (mutualSwipe) {
-            // It's a MATCH! Create Match record
-            const { data: match, error: matchError } = await supabase
-              .from("matches")
-              .insert({
-                user1_id: currentUserId < swipeeId ? currentUserId : swipeeId,
-                user2_id: currentUserId < swipeeId ? swipeeId : currentUserId,
-              })
+          if (swipeError) throw swipeError;
+
+          // 2. Check if the swipee has liked the swiper back (mutual swipe)
+          if (action === "like" || action === "superlike") {
+            const { data: mutualSwipe } = await supabase
+              .from("swipes")
               .select("*")
+              .eq("swiper_id", swipeeId)
+              .eq("swipee_id", currentUserId)
+              .in("action", ["like", "superlike"])
               .single();
 
-            if (matchError) throw matchError;
+            if (mutualSwipe) {
+              // It's a MATCH! Create Match record
+              const { data: match, error: matchError } = await supabase
+                .from("matches")
+                .insert({
+                  user1_id: currentUserId < swipeeId ? currentUserId : swipeeId,
+                  user2_id: currentUserId < swipeeId ? swipeeId : currentUserId,
+                })
+                .select("*")
+                .single();
 
-            // Fetch matched profile
-            const { data: matchedProfile } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("id", swipeeId)
-              .single();
+              if (matchError) throw matchError;
 
-            return {
-              is_match: true,
-              match_id: match.id,
-              matched_profile: matchedProfile as Profile,
-            };
+              // Fetch matched profile
+              const { data: matchedProfile } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("id", swipeeId)
+                .single();
+
+              return {
+                is_match: true,
+                match_id: match.id,
+                matched_profile: matchedProfile as Profile,
+              };
+            }
           }
-        }
 
-        return { is_match: false };
+          return { is_match: false };
+        } catch (dbErr) {
+          console.warn("Supabase performSwipe database error, falling back to local swipe engine", dbErr);
+        }
       }
 
       // Demo/Local Swiping Engine
@@ -621,7 +662,7 @@ export const supabaseService = {
       const currentUser = await supabaseService.auth.getCurrentUser();
       const currentUserId = currentUser ? currentUser.id : "current_user";
 
-      if (supabase) {
+      if (supabase && !isDemoMode() && isValidUuid(currentUserId)) {
         try {
           const { data, error } = await supabase
             .from("matches")
@@ -651,7 +692,7 @@ export const supabaseService = {
 
           return matches;
         } catch (e) {
-          console.error("Supabase getMatches error", e);
+          console.warn("Supabase getMatches query failed, falling back to local matches:", e);
         }
       }
 
@@ -663,15 +704,19 @@ export const supabaseService = {
   // === CHAT / MESSAGES ===
   messages: {
     async getMessages(matchId: string): Promise<Message[]> {
-      if (supabase) {
-        const { data, error } = await supabase
-          .from("messages")
-          .select("*")
-          .eq("match_id", matchId)
-          .order("created_at", { ascending: true });
+      if (supabase && !isDemoMode() && isValidUuid(matchId)) {
+        try {
+          const { data, error } = await supabase
+            .from("messages")
+            .select("*")
+            .eq("match_id", matchId)
+            .order("created_at", { ascending: true });
 
-        if (error) throw error;
-        return data as Message[];
+          if (error) throw error;
+          return data as Message[];
+        } catch (e) {
+          console.warn("Supabase getMessages error, falling back to local chat history:", e);
+        }
       }
 
       // Demo mode
@@ -683,7 +728,7 @@ export const supabaseService = {
       const currentUser = await supabaseService.auth.getCurrentUser();
       const currentUserId = currentUser ? currentUser.id : "current_user";
 
-      if (supabase) {
+      if (supabase && !isDemoMode() && isValidUuid(matchId) && isValidUuid(currentUserId)) {
         try {
           // Attempt to update both is_read and read_at.
           // If read_at doesn't exist yet as a column, this will fail, and we fall back.
@@ -704,7 +749,7 @@ export const supabaseService = {
               .eq("is_read", false);
           }
         } catch (e) {
-          console.error("Supabase markMessagesAsRead error, falling back", e);
+          console.warn("Supabase markMessagesAsRead error, falling back locally:", e);
         }
         return;
       }
@@ -742,20 +787,24 @@ export const supabaseService = {
       const currentUser = await supabaseService.auth.getCurrentUser();
       const currentUserId = currentUser ? currentUser.id : "current_user";
 
-      if (supabase) {
-        const { data, error } = await supabase
-          .from("messages")
-          .insert({
-            match_id: matchId,
-            sender_id: currentUserId,
-            receiver_id: receiverId,
-            text,
-          })
-          .select("*")
-          .single();
+      if (supabase && !isDemoMode() && isValidUuid(matchId) && isValidUuid(currentUserId) && isValidUuid(receiverId)) {
+        try {
+          const { data, error } = await supabase
+            .from("messages")
+            .insert({
+              match_id: matchId,
+              sender_id: currentUserId,
+              receiver_id: receiverId,
+              text,
+            })
+            .select("*")
+            .single();
 
-        if (error) throw error;
-        return data as Message;
+          if (error) throw error;
+          return data as Message;
+        } catch (e) {
+          console.warn("Supabase sendMessage error, saving message to local fallback database:", e);
+        }
       }
 
       // Demo mode

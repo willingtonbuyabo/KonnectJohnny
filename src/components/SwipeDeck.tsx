@@ -17,6 +17,7 @@ interface SwipeDeckProps {
   filters: MatchFilters;
   blurForUnverified: boolean;
   isCurrentUserVerified: boolean;
+  currentUserInterests?: string[];
 }
 
 export default function SwipeDeck({
@@ -27,6 +28,7 @@ export default function SwipeDeck({
   filters,
   blurForUnverified,
   isCurrentUserVerified,
+  currentUserInterests = [],
 }: SwipeDeckProps) {
   const activeProfile = profiles[currentIndex];
   const hasProfiles = currentIndex < profiles.length;
@@ -62,6 +64,7 @@ export default function SwipeDeck({
               onPass={() => onSwipe("left")}
               blurForUnverified={blurForUnverified}
               isCurrentUserVerified={isCurrentUserVerified}
+              currentUserInterests={currentUserInterests}
             />
 
             {/* Swipe Deck Buttons panel */}
