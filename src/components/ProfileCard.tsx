@@ -152,7 +152,7 @@ export default function ProfileCard({
             )}
 
             {/* Badges row */}
-            <div className="flex flex-wrap gap-1.5 mb-3">
+            <div className="flex flex-wrap gap-1.5 mb-2.5">
               <span className="text-[10px] font-sans font-semibold tracking-wider uppercase bg-brand-lavender/80 backdrop-blur-md px-2.5 py-1 rounded-full border border-brand-gold/20 text-brand-gold">
                 {profile.orientation}
               </span>
@@ -165,6 +165,40 @@ export default function ProfileCard({
                 </span>
               )}
             </div>
+
+            {/* Interest Badges on Front Card with Shared Interests Highlighted */}
+            {profile.interests && profile.interests.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {profile.interests.slice(0, 4).map((interest) => {
+                  const isShared = currentUserInterests.some(
+                    (ui) => ui.toLowerCase().trim() === interest.toLowerCase().trim()
+                  );
+                  return (
+                    <span
+                      key={interest}
+                      className={`text-[10px] px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1 transition-all backdrop-blur-md ${
+                        isShared
+                          ? "bg-gradient-to-r from-amber-500/35 to-amber-400/25 border border-amber-400 text-amber-200 font-bold shadow-sm shadow-amber-400/20 ring-1 ring-amber-400/50"
+                          : "bg-black/40 border border-white/10 text-brand-cream/80"
+                      }`}
+                    >
+                      {isShared && <Sparkles className="w-3 h-3 text-amber-300 animate-pulse shrink-0" />}
+                      {interest}
+                      {isShared && (
+                        <span className="text-[8px] bg-amber-400 text-brand-obsidian px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider ml-0.5">
+                          Shared
+                        </span>
+                      )}
+                    </span>
+                  );
+                })}
+                {profile.interests.length > 4 && (
+                  <span className="text-[9px] bg-black/40 border border-white/10 text-brand-cream/60 px-2 py-0.5 rounded-full backdrop-blur-md">
+                    +{profile.interests.length - 4} more
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Profile main details */}
             <div className="flex items-end justify-between gap-2">
@@ -432,7 +466,15 @@ export default function ProfileCard({
 
                   {/* Interests Tags */}
                   <div className="space-y-2">
-                    <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">Passions</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold">Passions & Interests</span>
+                      {sharedInterests.length > 0 && (
+                        <span className="text-[10px] font-sans font-bold text-amber-300 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-amber-400" />
+                          {sharedInterests.length} Shared with you
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-1.5">
                       {profile.interests.map((interest) => {
                         const isShared = currentUserInterests.some(
@@ -441,14 +483,19 @@ export default function ProfileCard({
                         return (
                           <span
                             key={interest}
-                            className={`text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1 transition-all ${
+                            className={`text-xs px-3 py-1.5 rounded-full font-medium flex items-center gap-1.5 transition-all ${
                               isShared
-                                ? "bg-brand-gold/15 border border-brand-gold text-brand-gold font-semibold shadow-xs"
-                                : "bg-brand-lavender/30 border border-brand-lavender/60 text-brand-cream"
+                                ? "bg-gradient-to-r from-amber-500/30 to-amber-400/20 border-2 border-amber-400 text-amber-200 font-bold shadow-md shadow-amber-500/20 ring-1 ring-amber-400/40"
+                                : "bg-brand-lavender/30 border border-brand-lavender/60 text-brand-cream/80"
                             }`}
                           >
-                            {isShared && <Sparkles className="w-3.5 h-3.5 text-brand-gold animate-pulse shrink-0" />}
+                            {isShared && <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse shrink-0" />}
                             {interest}
+                            {isShared && (
+                              <span className="text-[9px] bg-amber-400 text-brand-obsidian font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider ml-0.5 shadow-xs">
+                                Shared
+                              </span>
+                            )}
                           </span>
                         );
                       })}
