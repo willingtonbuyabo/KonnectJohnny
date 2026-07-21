@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { MessageSquare, ShieldAlert, Send, ArrowLeft, ShieldCheck, Phone, Video, Flower, Info, Compass, Check, CheckCheck } from "lucide-react";
+import { MessageSquare, ShieldAlert, Send, ArrowLeft, ShieldCheck, Phone, Video, Flower, Info, Compass, Check, CheckCheck, Crown, Heart, Sparkles } from "lucide-react";
 import { Match, Message, Profile } from "../types";
 import { supabaseService } from "../supabaseService";
 
@@ -12,9 +12,10 @@ interface MessageInboxProps {
   matches: Match[];
   onRefresh: () => void;
   currentUserProfile: any;
+  onOpenSubscription?: () => void;
 }
 
-export default function MessageInbox({ matches, onRefresh, currentUserProfile }: MessageInboxProps) {
+export default function MessageInbox({ matches, onRefresh, currentUserProfile, onOpenSubscription }: MessageInboxProps) {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -120,46 +121,81 @@ export default function MessageInbox({ matches, onRefresh, currentUserProfile }:
     <div className="w-full max-w-md mx-auto h-[calc(100vh-130px)] flex flex-col bg-brand-obsidian">
       {!selectedMatch ? (
         <div className="flex-1 flex flex-col overflow-y-auto px-4 py-4 space-y-6">
-          {/* Section: New Matches / Connections */}
-          {newConnections.length > 0 && (
-            <div className="space-y-2.5">
+          {/* Section: New Matches / Connections & Secret Admirers */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
               <h4 className="text-xs font-display font-semibold uppercase tracking-widest text-brand-gold">
                 New Connections ({newConnections.length})
               </h4>
-              <div className="flex gap-4 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
-                {newConnections.map((match) => (
-                  <button
-                    key={match.id}
-                    onClick={() => setSelectedMatch(match)}
-                    className="flex flex-col items-center shrink-0 space-y-1.5 focus:outline-none group relative"
-                  >
-                    <div className="relative w-15 h-15 rounded-full p-[2px] bg-gradient-to-tr from-brand-gold to-brand-lavender">
-                      <img
-                        src={match.profile.images?.[0] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600"}
-                        alt={match.profile.name}
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600";
-                        }}
-                        className="w-full h-full object-cover rounded-full border-2 border-brand-obsidian"
-                        referrerPolicy="no-referrer"
-                      />
-                      {match.profile.is_verified && (
-                        <span className="absolute bottom-0 right-0 bg-emerald-500 rounded-full border-2 border-brand-obsidian p-0.5">
-                          <ShieldCheck className="w-3 h-3 text-white" />
-                        </span>
-                      )}
-                      {match.unread_count > 0 && (
-                        <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border border-brand-obsidian animate-pulse" />
-                      )}
-                    </div>
-                    <span className="text-[11px] font-medium text-brand-cream/90 font-sans">
-                      {match.profile.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
+              {onOpenSubscription && (
+                <button
+                  onClick={onOpenSubscription}
+                  className="text-[10px] font-bold text-amber-300 hover:text-amber-200 flex items-center gap-1 uppercase tracking-wider"
+                >
+                  <Crown className="w-3 h-3 text-brand-gold" />
+                  VIP Unlocks
+                </button>
+              )}
             </div>
-          )}
+            <div className="flex gap-4 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
+              {/* Gold "Who Liked You" Secret Admirers Card */}
+              {onOpenSubscription && (
+                <button
+                  onClick={onOpenSubscription}
+                  className="flex flex-col items-center shrink-0 space-y-1.5 focus:outline-none group relative"
+                  id="inbox-secret-admirers-btn"
+                >
+                  <div className="relative w-15 h-15 rounded-full p-[2px] bg-gradient-to-tr from-brand-gold via-amber-300 to-amber-500 shadow-md shadow-brand-gold/20 group-hover:scale-105 transition-transform">
+                    <div className="w-full h-full rounded-full bg-brand-obsidian/90 overflow-hidden flex items-center justify-center relative border border-brand-gold/40">
+                      <img
+                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300"
+                        alt="Secret Admirer"
+                        className="w-full h-full object-cover blur-md opacity-50"
+                      />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+                        <Heart className="w-4 h-4 text-brand-gold fill-brand-gold animate-pulse" />
+                        <span className="text-[9px] font-black text-amber-200 mt-0.5">14+</span>
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-amber-200 font-sans flex items-center gap-0.5">
+                    Likes You
+                  </span>
+                </button>
+              )}
+
+              {newConnections.map((match) => (
+                <button
+                  key={match.id}
+                  onClick={() => setSelectedMatch(match)}
+                  className="flex flex-col items-center shrink-0 space-y-1.5 focus:outline-none group relative"
+                >
+                  <div className="relative w-15 h-15 rounded-full p-[2px] bg-gradient-to-tr from-brand-gold to-brand-lavender">
+                    <img
+                      src={match.profile.images?.[0] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600"}
+                      alt={match.profile.name}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600";
+                      }}
+                      className="w-full h-full object-cover rounded-full border-2 border-brand-obsidian"
+                      referrerPolicy="no-referrer"
+                    />
+                    {match.profile.is_verified && (
+                      <span className="absolute bottom-0 right-0 bg-emerald-500 rounded-full border-2 border-brand-obsidian p-0.5">
+                        <ShieldCheck className="w-3 h-3 text-white" />
+                      </span>
+                    )}
+                    {match.unread_count > 0 && (
+                      <span className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border border-brand-obsidian animate-pulse" />
+                    )}
+                  </div>
+                  <span className="text-[11px] font-medium text-brand-cream/90 font-sans">
+                    {match.profile.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Section: Active Chats */}
           <div className="flex-1 flex flex-col space-y-3">

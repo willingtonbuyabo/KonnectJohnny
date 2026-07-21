@@ -4,7 +4,7 @@
  */
 
 import React from "react";
-import { Heart, X, Sparkles, Filter, RefreshCw, Compass, ShieldCheck, Share2 } from "lucide-react";
+import { Heart, X, Sparkles, Filter, RefreshCw, Compass, ShieldCheck, Share2, Crown } from "lucide-react";
 import { Profile, MatchFilters } from "../types";
 import ProfileCard from "./ProfileCard";
 import { motion, AnimatePresence } from "motion/react";
@@ -14,6 +14,7 @@ interface SwipeDeckProps {
   currentIndex: number;
   onSwipe: (direction: "left" | "right" | "up") => void;
   onOpenFilters: () => void;
+  onOpenSubscription?: () => void;
   filters: MatchFilters;
   blurForUnverified: boolean;
   isCurrentUserVerified: boolean;
@@ -25,6 +26,7 @@ export default function SwipeDeck({
   currentIndex,
   onSwipe,
   onOpenFilters,
+  onOpenSubscription,
   filters,
   blurForUnverified,
   isCurrentUserVerified,
@@ -68,7 +70,7 @@ export default function SwipeDeck({
             />
 
             {/* Swipe Deck Buttons panel */}
-            <div className="flex items-center justify-center gap-6 mt-6 w-full">
+            <div className="flex items-center justify-center gap-5 mt-6 w-full">
               {/* Pass Button */}
               <button
                 onClick={() => onSwipe("left")}
@@ -78,6 +80,18 @@ export default function SwipeDeck({
               >
                 <X className="w-6 h-6 stroke-[2.5]" />
               </button>
+
+              {/* VIP Subscription trigger */}
+              {onOpenSubscription && (
+                <button
+                  onClick={onOpenSubscription}
+                  className="w-11 h-11 rounded-full bg-gradient-to-tr from-brand-gold/30 to-amber-300/20 border border-brand-gold flex items-center justify-center text-brand-gold hover:scale-105 active:scale-90 transition-all duration-300 shadow-md shadow-brand-gold/20"
+                  title="Unlock VIP Gold / Platinum Tiers"
+                  id="swipe-vip-btn"
+                >
+                  <Crown className="w-5 h-5 text-brand-gold animate-pulse" />
+                </button>
+              )}
 
               {/* Filter Shortcut */}
               <button
@@ -118,15 +132,26 @@ export default function SwipeDeck({
                 All Caught Up!
               </h3>
               <p className="text-xs text-brand-cream/60 leading-relaxed">
-                You've swiped on all available profiles matching your filters in Nairobi. Broaden your search criteria to find more folks!
+                You've swiped on all available profiles matching your filters in Nairobi. Broaden your search criteria or upgrade to Konnect VIP Passport!
               </p>
             </div>
 
             {/* Quick Actions */}
             <div className="flex flex-col gap-2.5 w-full max-w-[240px]">
+              {onOpenSubscription && (
+                <button
+                  onClick={onOpenSubscription}
+                  className="w-full py-2.5 bg-gradient-to-r from-brand-gold via-amber-300 to-brand-gold text-brand-obsidian rounded-xl font-display font-bold text-xs tracking-wider uppercase flex items-center justify-center gap-1.5 shadow-md shadow-brand-gold/20 active:scale-98 transition-all"
+                  id="deck-unlock-vip-btn"
+                >
+                  <Crown className="w-4 h-4" />
+                  Unlock Unlimited VIP Swipes
+                </button>
+              )}
+
               <button
                 onClick={onOpenFilters}
-                className="w-full py-2.5 bg-brand-gold text-brand-obsidian rounded-xl font-display font-semibold text-xs tracking-wider uppercase flex items-center justify-center gap-1.5 shadow-md active:scale-98 transition-all"
+                className="w-full py-2.5 bg-brand-lavender/30 border border-brand-lavender/60 text-brand-gold rounded-xl font-display font-semibold text-xs tracking-wider uppercase flex items-center justify-center gap-1.5 hover:bg-brand-lavender/50 transition-all"
                 id="deck-broaden-filters"
               >
                 <Filter className="w-3.5 h-3.5" />
@@ -135,7 +160,7 @@ export default function SwipeDeck({
 
               <button
                 onClick={handleShare}
-                className="w-full py-2.5 bg-brand-lavender/30 border border-brand-lavender/60 text-brand-gold rounded-xl font-display font-semibold text-xs tracking-wider uppercase flex items-center justify-center gap-1.5 hover:bg-brand-lavender/50 transition-all"
+                className="w-full py-2.5 bg-brand-obsidian/60 border border-brand-lavender/40 text-brand-cream/80 rounded-xl font-display font-semibold text-xs tracking-wider uppercase flex items-center justify-center gap-1.5 hover:bg-brand-obsidian transition-all"
                 id="deck-share-app"
               >
                 <Share2 className="w-3.5 h-3.5" />

@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { supabaseService, isDemoMode } from "./supabaseService";
-import { Profile, Match, UserProfile, MatchFilters, AppPrivacySettings } from "./types";
+import { Profile, Match, UserProfile, MatchFilters, AppPrivacySettings, SubscriptionTier } from "./types";
 import Header from "./components/Header";
 import BottomNav from "./components/BottomNav";
 import SwipeDeck from "./components/SwipeDeck";
@@ -15,6 +15,7 @@ import Onboarding from "./components/Onboarding";
 import WelcomePortal from "./components/WelcomePortal";
 import Filters from "./components/Filters";
 import PrivacySettings from "./components/PrivacySettings";
+import SubscriptionModal from "./components/SubscriptionModal";
 import ConfettiCanvas from "./components/ConfettiCanvas";
 import { motion, AnimatePresence } from "motion/react";
 import { ShieldCheck, Heart, Sparkles, MessageSquare, X, Flower, ChevronRight, AlertCircle, EyeOff } from "lucide-react";
@@ -65,6 +66,10 @@ export default function App() {
   // Modals state
   const [isFiltersOpen, setIsFiltersOpen] = useState<boolean>(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
+  const [isSubscriptionOpen, setIsSubscriptionOpen] = useState<boolean>(false);
+  const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>(() => {
+    return (localStorage.getItem("konnect_subscription_tier") as SubscriptionTier) || "free";
+  });
   
   // Match Success Modal overlay
   const [matchSuccessOverlay, setMatchSuccessOverlay] = useState<{
@@ -287,6 +292,8 @@ export default function App() {
           privacySettings={privacySettings}
           activeTab={activeTab}
           onOpenPrivacy={() => setIsPrivacyOpen(true)}
+          onOpenSubscription={() => setIsSubscriptionOpen(true)}
+          subscriptionTier={subscriptionTier}
           isDemo={isDemoMode()}
         />
       </div>
@@ -338,6 +345,8 @@ export default function App() {
                   isDemoMode={isDemoMode()}
                   initialSignUp={initialOnboardingSignUp}
                   onBackToLanding={() => setShowWelcomePortal(true)}
+                  onOpenSubscription={() => setIsSubscriptionOpen(true)}
+                  subscriptionTier={subscriptionTier}
                 />
               </motion.div>
             )
@@ -357,6 +366,7 @@ export default function App() {
                     currentIndex={currentIndex}
                     onSwipe={handleSwipe}
                     onOpenFilters={() => setIsFiltersOpen(true)}
+                    onOpenSubscription={() => setIsSubscriptionOpen(true)}
                     filters={filters}
                     blurForUnverified={privacySettings.blur_for_unverified}
                     isCurrentUserVerified={currentUser.is_verified}
@@ -378,6 +388,7 @@ export default function App() {
                     matches={matches}
                     onRefresh={loadMatches}
                     currentUserProfile={currentUser}
+                    onOpenSubscription={() => setIsSubscriptionOpen(true)}
                   />
                 </motion.div>
               )}
@@ -409,6 +420,8 @@ export default function App() {
                     onSave={handleProfileSave}
                     onSignOut={handleSignOut}
                     isDemoMode={isDemoMode()}
+                    onOpenSubscription={() => setIsSubscriptionOpen(true)}
+                    subscriptionTier={subscriptionTier}
                   />
                 </motion.div>
               )}
@@ -431,11 +444,29 @@ export default function App() {
                 filters={filters}
                 onChange={setFilters}
                 onClose={() => setIsFiltersOpen(false)}
+                onOpenSubscription={() => {
+                  setIsFiltersOpen(false);
+                  setIsSubscriptionOpen(true);
+                }}
               />
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* Subscription Modal */}
+      <SubscriptionModal
+        isOpen={isSubscriptionOpen}
+        onClose={() => setIsSubscriptionOpen(false)}
+        currentTier={subscriptionTier}
+        onUpgradeTier={(tier) => {
+          setSubscriptionTier(tier);
+          localStorage.setItem("konnect_subscription_tier", tier);
+          if (currentUser) {
+            setCurrentUser({ ...currentUser, subscription_tier: tier });
+          }
+        }}
+      />
 
       {/* Floating Privacy settings Modal Overlay */}
       <AnimatePresence>

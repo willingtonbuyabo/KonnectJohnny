@@ -4,13 +4,14 @@
  */
 
 import React from "react";
-import { Filter, RotateCcw, X, MapPin } from "lucide-react";
+import { Filter, RotateCcw, X, MapPin, Crown, Sparkles } from "lucide-react";
 import { MatchFilters } from "../types";
 
 interface FiltersProps {
   filters: MatchFilters;
   onChange: (filters: MatchFilters) => void;
   onClose: () => void;
+  onOpenSubscription?: () => void;
 }
 
 const GENDER_OPTIONS = [
@@ -38,7 +39,7 @@ const DEFAULT_FILTERS: MatchFilters = {
   relationship_goals: []
 };
 
-export default function Filters({ filters, onChange, onClose }: FiltersProps) {
+export default function Filters({ filters, onChange, onClose, onOpenSubscription }: FiltersProps) {
   const toggleGender = (gender: string) => {
     const isSelected = filters.genders.includes(gender);
     const updated = isSelected
@@ -220,6 +221,33 @@ export default function Filters({ filters, onChange, onClose }: FiltersProps) {
             })}
           </div>
         </div>
+
+        {/* Platinum VIP Advanced Filters Banner */}
+        {onOpenSubscription && (
+          <div
+            onClick={onOpenSubscription}
+            className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-brand-gold/15 to-amber-400/20 border border-amber-400/40 cursor-pointer hover:border-amber-300 transition-all group flex items-center justify-between"
+            id="filters-vip-banner"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-amber-400/20 border border-amber-300 flex items-center justify-center shrink-0">
+                <Crown className="w-4 h-4 text-amber-300 group-hover:scale-110 transition-transform" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-amber-200 flex items-center gap-1">
+                  Konnect Platinum Filters
+                  <Sparkles className="w-3 h-3 text-amber-300 animate-pulse" />
+                </h4>
+                <p className="text-[10px] text-brand-cream/70">
+                  Filter by verified-only, exact interests, orientation & incognito
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] bg-amber-400 text-brand-obsidian font-bold px-2 py-1 rounded-lg uppercase tracking-wider shrink-0">
+              Upgrade
+            </span>
+          </div>
+        )}
       </div>
 
       <button

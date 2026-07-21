@@ -4,17 +4,26 @@
  */
 
 import React from "react";
-import { Sparkles, Newspaper, Shield, Heart } from "lucide-react";
-import { AppPrivacySettings } from "../types";
+import { Sparkles, Newspaper, Shield, Heart, Crown } from "lucide-react";
+import { AppPrivacySettings, SubscriptionTier } from "../types";
 
 interface HeaderProps {
   privacySettings: AppPrivacySettings;
   activeTab: string;
   onOpenPrivacy: () => void;
+  onOpenSubscription: () => void;
+  subscriptionTier?: SubscriptionTier;
   isDemo: boolean;
 }
 
-export default function Header({ privacySettings, activeTab, onOpenPrivacy, isDemo }: HeaderProps) {
+export default function Header({
+  privacySettings,
+  activeTab,
+  onOpenPrivacy,
+  onOpenSubscription,
+  subscriptionTier = "free",
+  isDemo,
+}: HeaderProps) {
   const isDiscreet = privacySettings.discreet_mode;
 
   return (
@@ -49,6 +58,25 @@ export default function Header({ privacySettings, activeTab, onOpenPrivacy, isDe
 
       {/* Right side controls */}
       <div className="flex items-center gap-2.5">
+        {/* VIP / Subscription Tier Badge Button */}
+        <button
+          onClick={onOpenSubscription}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all duration-300 shadow-sm ${
+            subscriptionTier === "platinum"
+              ? "bg-gradient-to-r from-amber-400/20 to-amber-300/10 border-amber-300 text-amber-200 shadow-amber-300/20"
+              : subscriptionTier === "gold"
+              ? "bg-gradient-to-r from-brand-gold/20 to-amber-400/10 border-brand-gold text-brand-gold shadow-brand-gold/20"
+              : "bg-gradient-to-r from-brand-gold/10 via-amber-400/10 to-brand-plum/30 border-brand-gold/40 text-brand-gold hover:border-brand-gold hover:shadow-brand-gold/20"
+          }`}
+          title="Konnect VIP Subscription Plans"
+          id="header-subscription-btn"
+        >
+          <Crown className="w-4 h-4 text-brand-gold animate-pulse" />
+          <span className="text-xs font-bold uppercase tracking-wider">
+            {subscriptionTier === "free" ? "VIP Plans" : subscriptionTier}
+          </span>
+        </button>
+
         {/* Demo Mode Badge */}
         {isDemo && (
           <div className="hidden sm:flex items-center gap-1 bg-brand-gold/10 border border-brand-gold/20 rounded-full px-2 py-0.5 text-[9px] text-brand-gold font-sans uppercase tracking-wider">

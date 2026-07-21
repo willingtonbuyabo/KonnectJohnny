@@ -25,9 +25,19 @@ export interface Profile {
   };
 }
 
+export type SubscriptionTier = "free" | "gold" | "platinum";
+
+export interface UserSubscription {
+  tier: SubscriptionTier;
+  billingCycle?: "monthly" | "annual";
+  expiresAt?: string;
+  autoRenew?: boolean;
+}
+
 export interface UserProfile extends Profile {
   email?: string;
   created_at?: string;
+  subscription_tier?: SubscriptionTier;
 }
 
 export interface Match {

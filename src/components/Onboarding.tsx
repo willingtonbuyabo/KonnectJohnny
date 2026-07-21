@@ -4,8 +4,8 @@
  */
 
 import React, { useState } from "react";
-import { User, ShieldCheck, Heart, MapPin, Sparkles, Upload, Flower, CheckCircle, Check, Key, Loader2 } from "lucide-react";
-import { UserProfile } from "../types";
+import { User, ShieldCheck, Heart, MapPin, Sparkles, Upload, Flower, CheckCircle, Check, Key, Loader2, Crown, Zap } from "lucide-react";
+import { UserProfile, SubscriptionTier } from "../types";
 import { supabaseService } from "../supabaseService";
 
 interface OnboardingProps {
@@ -15,6 +15,8 @@ interface OnboardingProps {
   isDemoMode: boolean;
   initialSignUp?: boolean;
   onBackToLanding?: () => void;
+  onOpenSubscription?: () => void;
+  subscriptionTier?: SubscriptionTier;
 }
 
 const GENDER_OPTIONS = ["Non-binary", "Trans Woman", "Trans Man", "Cis Woman", "Cis Man", "Genderfluid", "Queer"];
@@ -38,7 +40,16 @@ const NAIROBI_NEIGHBOURHOODS = [
   "Gigiri, Nairobi",
 ];
 
-export default function Onboarding({ userProfile, onSave, onSignOut, isDemoMode, initialSignUp = true, onBackToLanding }: OnboardingProps) {
+export default function Onboarding({
+  userProfile,
+  onSave,
+  onSignOut,
+  isDemoMode,
+  initialSignUp = true,
+  onBackToLanding,
+  onOpenSubscription,
+  subscriptionTier = "free",
+}: OnboardingProps) {
   // If no profile, we start in Auth/Welcome mode
   const [isAuthMode, setIsAuthMode] = useState(!userProfile);
   const [email, setEmail] = useState("");
@@ -409,6 +420,50 @@ export default function Onboarding({ userProfile, onSave, onSignOut, isDemoMode,
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5 bg-brand-plum border border-brand-lavender/50 rounded-3xl p-5 shadow-lg">
+        {/* VIP Membership Plan Status Card */}
+        {onOpenSubscription && (
+          <div
+            onClick={onOpenSubscription}
+            className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
+              subscriptionTier === "platinum"
+                ? "bg-gradient-to-r from-amber-500/20 via-purple-900/30 to-amber-400/20 border-amber-300 shadow-md shadow-amber-300/10"
+                : subscriptionTier === "gold"
+                ? "bg-gradient-to-r from-brand-gold/20 via-amber-400/15 to-brand-plum/40 border-brand-gold shadow-md shadow-brand-gold/10"
+                : "bg-brand-obsidian/80 border-brand-gold/40 hover:border-brand-gold"
+            }`}
+            id="onboarding-vip-card"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-brand-gold/20 border border-brand-gold/50 flex items-center justify-center shrink-0">
+                <Crown className="w-5 h-5 text-brand-gold animate-bounce" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold font-serif text-brand-cream">
+                    Membership: <span className="uppercase text-brand-gold">{subscriptionTier} TIER</span>
+                  </h4>
+                  {subscriptionTier !== "free" && (
+                    <span className="text-[9px] bg-emerald-500 text-brand-obsidian px-1.5 py-0.2 rounded-full font-black uppercase">
+                      Active
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-brand-cream/70 font-sans mt-0.5">
+                  {subscriptionTier === "free"
+                    ? "Upgrade to Gold or Platinum for unlimited swipes, secret admirers & filters!"
+                    : "Your VIP privileges are active. Tap to manage billing or upgrade."}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="text-[10px] bg-gradient-to-r from-brand-gold via-amber-300 to-brand-gold text-brand-obsidian font-bold px-3 py-1.5 rounded-xl uppercase tracking-wider shrink-0 shadow-sm"
+            >
+              {subscriptionTier === "free" ? "Upgrade" : "Manage"}
+            </button>
+          </div>
+        )}
+
         {/* Verification Check Simulator */}
         <div className="bg-brand-gold/10 border border-brand-gold/20 rounded-2xl p-4 flex items-center justify-between">
           <div className="space-y-0.5">
