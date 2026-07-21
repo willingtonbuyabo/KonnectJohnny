@@ -492,14 +492,20 @@ export default function App() {
                   <img
                     src={currentUser?.images?.[0] || "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600"}
                     alt="You"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600";
+                    }}
                     className="w-full h-full object-cover rounded-full border-4 border-brand-obsidian"
                     referrerPolicy="no-referrer"
                   />
                 </div>
                 <div className="relative w-28 h-28 rounded-full p-1 bg-brand-lavender">
                   <img
-                    src={matchSuccessOverlay.profile.images[0]}
+                    src={matchSuccessOverlay.profile.images?.[0] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600"}
                     alt={matchSuccessOverlay.profile.name}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600";
+                    }}
                     className="w-full h-full object-cover rounded-full border-4 border-brand-obsidian"
                     referrerPolicy="no-referrer"
                   />

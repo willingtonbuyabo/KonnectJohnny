@@ -112,8 +112,11 @@ export default function WelcomePortal({ onStartAuth, isDemoMode }: WelcomePortal
                   >
                     {/* Profile Image */}
                     <img 
-                      src={activeDemoProfile.images[0]} 
+                      src={activeDemoProfile.images?.[0] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600"} 
                       alt={activeDemoProfile.name}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600";
+                      }}
                       className="absolute inset-0 w-full h-full object-cover"
                       referrerPolicy="no-referrer"
                     />
@@ -232,8 +235,11 @@ export default function WelcomePortal({ onStartAuth, isDemoMode }: WelcomePortal
                       </div>
                       <div className="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-[#ff3366] to-[#9933ff]">
                         <img 
-                          src={matchedProfile.images[0]} 
+                          src={matchedProfile.images?.[0] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600"} 
                           alt={matchedProfile.name} 
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600";
+                          }}
                           className="w-full h-full object-cover rounded-full border border-black"
                           referrerPolicy="no-referrer"
                         />

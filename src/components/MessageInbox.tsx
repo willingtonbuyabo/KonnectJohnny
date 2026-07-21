@@ -135,8 +135,11 @@ export default function MessageInbox({ matches, onRefresh, currentUserProfile }:
                   >
                     <div className="relative w-15 h-15 rounded-full p-[2px] bg-gradient-to-tr from-brand-gold to-brand-lavender">
                       <img
-                        src={match.profile.images[0]}
+                        src={match.profile.images?.[0] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600"}
                         alt={match.profile.name}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600";
+                        }}
                         className="w-full h-full object-cover rounded-full border-2 border-brand-obsidian"
                         referrerPolicy="no-referrer"
                       />
@@ -175,8 +178,11 @@ export default function MessageInbox({ matches, onRefresh, currentUserProfile }:
                     {/* Avatar */}
                     <div className="relative shrink-0 w-12 h-12">
                       <img
-                        src={match.profile.images[0]}
+                        src={match.profile.images?.[0] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600"}
                         alt={match.profile.name}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600";
+                        }}
                         className="w-full h-full object-cover rounded-full"
                         referrerPolicy="no-referrer"
                       />
@@ -253,8 +259,11 @@ export default function MessageInbox({ matches, onRefresh, currentUserProfile }:
 
               <div className="relative shrink-0 w-10 h-10">
                 <img
-                  src={selectedMatch.profile.images[0]}
+                  src={selectedMatch.profile.images?.[0] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600"}
                   alt={selectedMatch.profile.name}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600";
+                  }}
                   className="w-full h-full object-cover rounded-full"
                   referrerPolicy="no-referrer"
                 />

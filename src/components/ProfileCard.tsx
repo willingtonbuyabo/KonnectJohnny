@@ -33,10 +33,15 @@ export default function ProfileCard({
   const [reportNotes, setReportNotes] = useState("");
   const [isReportSubmitted, setIsReportSubmitted] = useState(false);
 
-  const imagesCount = profile.images.length;
+  const defaultFallbackImage = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=600";
+  const imagesList = Array.isArray(profile.images) && profile.images.length > 0
+    ? profile.images
+    : [defaultFallbackImage];
+  const imagesCount = imagesList.length;
+  const currentImage = imagesList[currentImageIndex] || imagesList[0] || defaultFallbackImage;
 
   // Compatibility matching logic based on matching interests
-  const sharedInterests = profile.interests.filter(interest =>
+  const sharedInterests = (profile.interests || []).filter(interest =>
     currentUserInterests.some(userInterest =>
       userInterest.toLowerCase().trim() === interest.toLowerCase().trim()
     )
@@ -72,7 +77,7 @@ export default function ProfileCard({
         {/* Images Navigation bar indicators */}
         {imagesCount > 1 && !isExpanded && (
           <div className="absolute top-4 left-4 right-4 z-20 flex gap-1.5 px-2">
-            {profile.images.map((_, idx) => (
+            {imagesList.map((_, idx) => (
               <div
                 key={idx}
                 className={`h-1 flex-1 rounded-full transition-all duration-300 ${
@@ -86,8 +91,11 @@ export default function ProfileCard({
         {/* Profile Image with Blur Option */}
         <div className="absolute inset-0 bg-brand-obsidian">
           <img
-            src={profile.images[currentImageIndex]}
+            src={currentImage}
             alt={profile.name}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = defaultFallbackImage;
+            }}
             className={`w-full h-full object-cover transition-all duration-500 ${
               shouldBlur ? "blur-2xl opacity-40 scale-110" : "scale-100"
             }`}
@@ -372,6 +380,41 @@ export default function ProfileCard({
                     <p className="text-sm text-brand-cream/90 leading-relaxed mt-1">
                       {profile.bio}
                     </p>
+                  </div>
+
+                  {/* Photo Gallery Grid in Expanded View */}
+                  <div className="space-y-2">
+                    <span className="text-[10px] uppercase font-mono tracking-widest text-brand-gold block">
+                      Photo Album ({imagesCount})
+                    </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {imagesList.map((imgUrl, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => setCurrentImageIndex(idx)}
+                          className={`relative aspect-3/4 rounded-xl overflow-hidden border cursor-pointer transition-all ${
+                            idx === currentImageIndex
+                              ? "border-brand-gold shadow-md shadow-brand-gold/20 ring-2 ring-brand-gold/30"
+                              : "border-brand-lavender/40 hover:border-brand-gold/60 opacity-80 hover:opacity-100"
+                          }`}
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`${profile.name} photo ${idx + 1}`}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src = defaultFallbackImage;
+                            }}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                          {idx === currentImageIndex && (
+                            <div className="absolute top-1.5 right-1.5 bg-brand-gold text-brand-obsidian text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                              Active
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Massage Jonny Wellness Tribute Section */}
