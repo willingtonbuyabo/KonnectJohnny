@@ -305,37 +305,46 @@ export const supabaseService = {
 
     async signUp(email: string, password: string, profile: Omit<UserProfile, "id" | "is_verified">): Promise<UserProfile> {
       localStorage.setItem("jonny_match_use_demo_mode", "false");
-      if (supabase) {
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-
-        if (authError) throw authError;
-        if (!authData.user) throw new Error("Sign up failed");
-
-        const newProfile: UserProfile = {
-          id: authData.user.id,
-          ...profile,
-          is_verified: false,
-          email,
-        };
-
+      if (supabase && !hasConnectionError) {
         try {
-          const { error: profileError } = await supabase
-            .from("profiles")
-            .insert(newProfile);
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email,
+            password,
+          });
 
-          if (profileError) {
-            console.warn("Database profiles insert failed, using fallback:", profileError);
+          if (authError) throw authError;
+          if (!authData.user) throw new Error("Sign up failed");
+
+          const newProfile: UserProfile = {
+            id: authData.user.id,
+            ...profile,
+            is_verified: false,
+            email,
+          };
+
+          try {
+            const { error: profileError } = await supabase
+              .from("profiles")
+              .insert(newProfile);
+
+            if (profileError) {
+              console.warn("Database profiles insert failed, using fallback:", profileError);
+            }
+          } catch (dbErr) {
+            console.warn("Database profiles insert caught exception, using fallback:", dbErr);
           }
-        } catch (dbErr) {
-          console.warn("Database profiles insert caught exception, using fallback:", dbErr);
-        }
 
-        // Always sync with localStorage for local-first/session consistency
-        setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, newProfile);
-        return newProfile;
+          // Always sync with localStorage for local-first/session consistency
+          setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, newProfile);
+          return newProfile;
+        } catch (authErr: any) {
+          console.warn("Supabase auth signUp error or network failure, falling back to local sign up:", authErr);
+          handleConnectionError(authErr);
+          const msg = String(authErr?.message || authErr).toLowerCase();
+          if (!msg.includes("fetch") && !msg.includes("network") && !msg.includes("failed")) {
+            throw authErr;
+          }
+        }
       }
 
       // Local demo signUp
@@ -358,67 +367,76 @@ export const supabaseService = {
         localStorage.setItem("jonny_match_use_demo_mode", "false");
       }
 
-      if (supabase && !forceDemo) {
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (authError) throw authError;
-        if (!authData.user) throw new Error("Sign in failed");
-
-        let profile: UserProfile | null = null;
+      if (supabase && !forceDemo && !hasConnectionError) {
         try {
-          const { data, error: profileError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", authData.user.id)
-            .single();
+          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
 
-          if (!profileError && data) {
-            profile = data as UserProfile;
-          } else {
-            console.warn("Could not load user profile from database, creating default:", profileError);
+          if (authError) throw authError;
+          if (!authData.user) throw new Error("Sign in failed");
+
+          let profile: UserProfile | null = null;
+          try {
+            const { data, error: profileError } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", authData.user.id)
+              .single();
+
+            if (!profileError && data) {
+              profile = data as UserProfile;
+            } else {
+              console.warn("Could not load user profile from database, creating default:", profileError);
+            }
+          } catch (err) {
+            console.warn("Exception during profile fetch:", err);
           }
-        } catch (err) {
-          console.warn("Exception during profile fetch:", err);
-        }
 
-        if (!profile) {
-          // If no profile row in DB, construct a clean default
-          profile = {
-            id: authData.user.id,
-            name: email.split("@")[0] || "Jonny Guest",
-            age: 26,
-            gender: "Non-binary",
-            pronouns: "They/Them",
-            orientation: "Queer",
-            bio: "Exploring connections...",
-            location_name: "Kilimani, Nairobi",
-            distance_km: 0,
-            images: ["https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600"],
-            interests: ["Coffee", "Art", "Yoga"],
-            is_verified: true,
-            relationship_goals: ["Dating"],
-            massage_affinity: "Swedish Massage Enthusiast",
+          if (!profile) {
+            // If no profile row in DB, construct a clean default
+            profile = {
+              id: authData.user.id,
+              name: email.split("@")[0] || "Jonny Guest",
+              age: 26,
+              gender: "Non-binary",
+              pronouns: "They/Them",
+              orientation: "Queer",
+              bio: "Exploring connections...",
+              location_name: "Kilimani, Nairobi",
+              distance_km: 0,
+              images: ["https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=600"],
+              interests: ["Coffee", "Art", "Yoga"],
+              is_verified: true,
+              relationship_goals: ["Dating"],
+              massage_affinity: "Swedish Massage Enthusiast",
+              email: authData.user.email || email,
+            };
+
+            // Attempt to insert it so it's there next time, but ignore failures
+            try {
+              await supabase.from("profiles").insert(profile);
+            } catch (e) {
+              console.warn("Could not insert default profile:", e);
+            }
+          }
+
+          const loggedInProfile: UserProfile = {
+            ...profile,
             email: authData.user.email || email,
           };
 
-          // Attempt to insert it so it's there next time, but ignore failures
-          try {
-            await supabase.from("profiles").insert(profile);
-          } catch (e) {
-            console.warn("Could not insert default profile:", e);
+          setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, loggedInProfile);
+          return loggedInProfile;
+        } catch (authErr: any) {
+          console.warn("Supabase signIn error or network failure:", authErr);
+          handleConnectionError(authErr);
+          const msg = String(authErr?.message || authErr).toLowerCase();
+          if (!msg.includes("fetch") && !msg.includes("network") && !msg.includes("failed")) {
+            throw authErr;
           }
         }
-
-        const loggedInProfile: UserProfile = {
-          ...profile,
-          email: authData.user.email || email,
-        };
-
-        setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, loggedInProfile);
-        return loggedInProfile;
       }
 
       // Local demo signIn
@@ -457,10 +475,12 @@ export const supabaseService = {
       if (supabase && !isDemoMode() && isValidUuid(currentUserId)) {
         try {
           // 1. Fetch swiped IDs first to exclude them
-          const { data: swipes } = await supabase
+          const { data: swipes, error: swipesError } = await supabase
             .from("swipes")
             .select("swipee_id")
             .eq("swiper_id", currentUserId);
+
+          if (swipesError) throw swipesError;
 
           const swipedIds = swipes ? swipes.map((s) => s.swipee_id) : [];
           swipedIds.push(currentUserId); // exclude self
