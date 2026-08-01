@@ -16,6 +16,9 @@ export interface Profile {
   location_name: string;
   distance_km: number;
   is_verified: boolean;
+  verification_selfie_url?: string;
+  verification_status?: "unverified" | "pending" | "approved" | "rejected";
+  verification_submitted_at?: string;
   relationship_goals: string[];
   massage_affinity?: string; // Tribute to Massage Jonny: e.g. "Deep Tissue Lover", "Swedish Massage Enthusiast", "Aromatherapy Fan"
   safety_flags?: {

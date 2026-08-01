@@ -4,9 +4,10 @@
  */
 
 import React, { useState } from "react";
-import { User, ShieldCheck, Heart, MapPin, Sparkles, Upload, Flower, CheckCircle, Check, Key, Loader2, Crown, Zap } from "lucide-react";
+import { User, ShieldCheck, Heart, MapPin, Sparkles, Upload, Flower, CheckCircle, Check, Key, Loader2, Crown, Zap, Camera, ShieldAlert, CheckCircle2 } from "lucide-react";
 import { UserProfile, SubscriptionTier } from "../types";
 import { supabaseService } from "../supabaseService";
+import VerifyMeModal from "./VerifyMeModal";
 
 interface OnboardingProps {
   userProfile: UserProfile | null;
@@ -73,6 +74,20 @@ export default function Onboarding({
   const [massageAffinity, setMassageAffinity] = useState(userProfile?.massage_affinity || MASSAGE_AFFINITIES[0]);
   const [selectedGoals, setSelectedGoals] = useState<string[]>(userProfile?.relationship_goals || ["Dating"]);
   const [isVerified, setIsVerified] = useState(userProfile?.is_verified ?? true);
+  const [isVerifyMeOpen, setIsVerifyMeOpen] = useState(false);
+  const [verificationSelfieUrl, setVerificationSelfieUrl] = useState(userProfile?.verification_selfie_url || "");
+  const [verificationStatus, setVerificationStatus] = useState<"unverified" | "pending" | "approved" | "rejected">(
+    userProfile?.verification_status || (userProfile?.is_verified ? "approved" : "unverified")
+  );
+
+  const handleVerifyModalSave = async (updated: UserProfile) => {
+    setIsVerified(updated.is_verified);
+    setVerificationStatus(updated.verification_status || (updated.is_verified ? "approved" : "unverified"));
+    if (updated.verification_selfie_url) {
+      setVerificationSelfieUrl(updated.verification_selfie_url);
+    }
+    await onSave(updated);
+  };
 
   const handleToggleGoal = (goal: string) => {
     setSelectedGoals((prev) =>
@@ -142,6 +157,8 @@ export default function Onboarding({
         images: [imageUrl],
         interests: userProfile?.interests || ["Art", "Yoga", "Vinyl", "Music"],
         is_verified: isVerified,
+        verification_selfie_url: verificationSelfieUrl || userProfile?.verification_selfie_url,
+        verification_status: verificationStatus,
         relationship_goals: selectedGoals,
         massage_affinity: massageAffinity,
         email: userProfile?.email || email || "demo@massagejohnny.com",
@@ -464,28 +481,79 @@ export default function Onboarding({
           </div>
         )}
 
-        {/* Verification Check Simulator */}
-        <div className="bg-brand-gold/10 border border-brand-gold/20 rounded-2xl p-4 flex items-center justify-between">
-          <div className="space-y-0.5">
-            <span className="text-xs font-semibold text-brand-cream flex items-center gap-1">
-              <ShieldCheck className="w-4.5 h-4.5 text-emerald-400" />
-              Verified Status (Shield check)
-            </span>
-            <p className="text-[10px] text-brand-cream/60">
-              Show others you are a verified member of Jonny Match.
-            </p>
+        {/* Verify Me & Authenticity Portal */}
+        <div className="bg-gradient-to-r from-brand-gold/15 via-amber-400/10 to-brand-plum border border-brand-gold/40 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold text-brand-gold flex items-center gap-1.5 uppercase tracking-wide">
+                <ShieldCheck className={`w-4 h-4 ${isVerified ? "text-emerald-400" : "text-brand-gold"}`} />
+                Authenticity Verification
+              </span>
+              <p className="text-[10px] text-brand-cream/70 font-sans">
+                {isVerified
+                  ? "Your profile is verified with an official golden shield!"
+                  : verificationStatus === "pending"
+                  ? "Selfie verification submitted! Pending administrator review."
+                  : "Upload a selfie photo to get your verified authenticity shield."}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              id="verify-me-btn"
+              onClick={() => setIsVerifyMeOpen(true)}
+              className="text-[10px] bg-gradient-to-r from-brand-gold via-amber-300 to-brand-gold text-brand-obsidian font-bold px-3 py-2 rounded-xl uppercase tracking-wider shrink-0 shadow-md hover:brightness-110 transition-all flex items-center gap-1.5"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              {isVerified ? "Manage Selfie" : "Verify Me"}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsVerified(!isVerified)}
-            className={`text-[10px] font-sans font-semibold uppercase tracking-wider px-3 py-1.5 rounded-xl border transition-all ${
-              isVerified
-                ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-400"
-                : "bg-brand-lavender/40 border-brand-lavender text-brand-cream/50 hover:border-brand-gold/40"
-            }`}
-          >
-            {isVerified ? "Verified" : "Unverified"}
-          </button>
+
+          {/* Verification Status & Admin Toggle Bar */}
+          <div className="pt-2 border-t border-brand-gold/20 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-brand-cream/50 uppercase">Status:</span>
+              <span
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase border ${
+                  isVerified
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                    : verificationStatus === "pending"
+                    ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                    : "bg-brand-lavender/20 text-brand-cream/60 border-brand-lavender/40"
+                }`}
+              >
+                {isVerified ? "Verified" : verificationStatus === "pending" ? "Pending Approval" : "Unverified"}
+              </span>
+
+              {verificationSelfieUrl && (
+                <div className="flex items-center gap-1 text-[10px] text-emerald-400">
+                  <CheckCircle2 className="w-3 h-3" />
+                  <span>Selfie Attached</span>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Admin Manual Approval Toggle */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-brand-gold/80 uppercase">Admin Approval:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const nextVerified = !isVerified;
+                  setIsVerified(nextVerified);
+                  setVerificationStatus(nextVerified ? "approved" : "unverified");
+                }}
+                className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border transition-all ${
+                  isVerified
+                    ? "bg-emerald-500/30 border-emerald-400 text-emerald-300"
+                    : "bg-brand-obsidian border-brand-lavender/50 text-brand-cream/60 hover:border-brand-gold"
+                }`}
+                title="Admin manual toggle switch to approve/revoke verification status"
+              >
+                {isVerified ? "Approved" : "Toggle Approve"}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Profile Image with Drag and Drop Uploader */}
@@ -750,6 +818,21 @@ export default function Onboarding({
           Save Profile Card
         </button>
       </form>
+
+      {/* Verify Me Selfie & Admin Approval Modal */}
+      {userProfile && (
+        <VerifyMeModal
+          isOpen={isVerifyMeOpen}
+          onClose={() => setIsVerifyMeOpen(false)}
+          userProfile={{
+            ...userProfile,
+            is_verified: isVerified,
+            verification_selfie_url: verificationSelfieUrl,
+            verification_status: verificationStatus,
+          }}
+          onSaveProfile={handleVerifyModalSave}
+        />
+      )}
     </div>
   );
 }
