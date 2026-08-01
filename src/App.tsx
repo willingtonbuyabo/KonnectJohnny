@@ -16,6 +16,7 @@ import WelcomePortal from "./components/WelcomePortal";
 import Filters from "./components/Filters";
 import PrivacySettings from "./components/PrivacySettings";
 import SubscriptionModal from "./components/SubscriptionModal";
+import AdminPortalModal from "./components/AdminPortalModal";
 import ConfettiCanvas from "./components/ConfettiCanvas";
 import { motion, AnimatePresence } from "motion/react";
 import { ShieldCheck, Heart, Sparkles, MessageSquare, X, Flower, ChevronRight, AlertCircle, EyeOff } from "lucide-react";
@@ -67,6 +68,7 @@ export default function App() {
   const [isFiltersOpen, setIsFiltersOpen] = useState<boolean>(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState<boolean>(false);
   const [isSubscriptionOpen, setIsSubscriptionOpen] = useState<boolean>(false);
+  const [isAdminOpen, setIsAdminOpen] = useState<boolean>(false);
   const [subscriptionTier, setSubscriptionTier] = useState<SubscriptionTier>(() => {
     return (localStorage.getItem("konnect_subscription_tier") as SubscriptionTier) || "free";
   });
@@ -293,6 +295,7 @@ export default function App() {
           activeTab={activeTab}
           onOpenPrivacy={() => setIsPrivacyOpen(true)}
           onOpenSubscription={() => setIsSubscriptionOpen(true)}
+          onOpenAdmin={() => setIsAdminOpen(true)}
           subscriptionTier={subscriptionTier}
           isDemo={isDemoMode()}
         />
@@ -466,6 +469,14 @@ export default function App() {
             setCurrentUser({ ...currentUser, subscription_tier: tier });
           }
         }}
+      />
+
+      {/* Admin Control Center Modal */}
+      <AdminPortalModal
+        isOpen={isAdminOpen}
+        onClose={() => setIsAdminOpen(false)}
+        currentUser={currentUser}
+        onUpdateCurrentUser={(updated) => setCurrentUser(updated)}
       />
 
       {/* Floating Privacy settings Modal Overlay */}

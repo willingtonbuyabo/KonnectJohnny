@@ -4,7 +4,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { Profile, Match, Message, UserProfile, MatchFilters, AppPrivacySettings } from "./types";
+import { Profile, Match, Message, UserProfile, MatchFilters, AppPrivacySettings, SubscriptionTier } from "./types";
 import { mockProfiles } from "./data/mockProfiles";
 
 // Fetch from Vite environment variables
@@ -23,6 +23,18 @@ const cleanUrl = (url: string): string => {
 };
 
 const supabaseUrl = cleanUrl(rawSupabaseUrl);
+
+export function isDesignatedAdminEmail(email?: string): boolean {
+  if (!email) return false;
+  const lower = email.trim().toLowerCase();
+  return (
+    lower === "jerrostech@gmail.com" ||
+    lower.startsWith("admin@") ||
+    lower.includes("admin") ||
+    lower === "admin@massagejohnny.com" ||
+    lower === "admin@jonnymatch.com"
+  );
+}
 
 // Function to validate that we have a real, external Supabase endpoint
 const isValidSupabaseUrl = (url: string): boolean => {
@@ -962,6 +974,170 @@ export const supabaseService = {
       }, 2600);
 
       return newMsg;
+    },
+  },
+
+  // === ADMIN PORTAL & ACCOUNT MANAGEMENT ===
+  admin: {
+    async getAllUsers(): Promise<UserProfile[]> {
+      let dbProfiles: UserProfile[] = [];
+      if (supabase && !isDemoMode()) {
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+          if (!error && data) {
+            dbProfiles = data as UserProfile[];
+          }
+        } catch (err) {
+          console.warn("Could not fetch all users from Supabase for admin portal:", err);
+        }
+      }
+
+      // Combine with local profile & mock profiles so admin can inspect all
+      const currentLocal = getLocalStorageItem<UserProfile | null>(STORAGE_KEYS.USER_PROFILE, null);
+      const allMap = new Map<string, UserProfile>();
+
+      if (currentLocal) {
+        const isAdmin = currentLocal.is_admin || isDesignatedAdminEmail(currentLocal.email);
+        allMap.set(currentLocal.id, {
+          ...currentLocal,
+          is_admin: isAdmin,
+          role: isAdmin ? "admin" : currentLocal.role || "user",
+        });
+      }
+
+      dbProfiles.forEach((p) => {
+        const email = p.email || (p.id === currentLocal?.id ? currentLocal.email : undefined);
+        const isAdmin = p.is_admin || isDesignatedAdminEmail(email);
+        allMap.set(p.id, {
+          ...p,
+          email,
+          is_admin: isAdmin,
+          role: isAdmin ? "admin" : p.role || "user",
+        });
+      });
+
+      mockProfiles.forEach((m) => {
+        if (!allMap.has(m.id)) {
+          allMap.set(m.id, {
+            ...m,
+            email: `${m.name.toLowerCase().replace(/\s+/g, ".")}@example.com`,
+            is_admin: false,
+            role: "user",
+          });
+        }
+      });
+
+      return Array.from(allMap.values());
+    },
+
+    async updateUserRole(userId: string, isAdmin: boolean): Promise<boolean> {
+      const role = isAdmin ? "admin" : "user";
+      if (supabase && !isDemoMode() && isValidUuid(userId)) {
+        try {
+          const { error } = await supabase
+            .from("profiles")
+            .update({ is_admin: isAdmin, role })
+            .eq("id", userId);
+
+          if (error) console.warn("Supabase admin role update warning:", error);
+        } catch (e) {
+          console.warn("Supabase admin role update exception:", e);
+        }
+      }
+
+      // Sync local profile if editing current user
+      const current = getLocalStorageItem<UserProfile | null>(STORAGE_KEYS.USER_PROFILE, null);
+      if (current && current.id === userId) {
+        setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, {
+          ...current,
+          is_admin: isAdmin,
+          role,
+        });
+      }
+      return true;
+    },
+
+    async updateUserVerification(
+      userId: string,
+      isVerified: boolean,
+      status: "unverified" | "pending" | "approved" | "rejected" = isVerified ? "approved" : "unverified"
+    ): Promise<boolean> {
+      if (supabase && !isDemoMode() && isValidUuid(userId)) {
+        try {
+          const { error } = await supabase
+            .from("profiles")
+            .update({
+              is_verified: isVerified,
+              verification_status: status,
+            })
+            .eq("id", userId);
+
+          if (error) console.warn("Supabase verification update warning:", error);
+        } catch (e) {
+          console.warn("Supabase verification update exception:", e);
+        }
+      }
+
+      // Sync local profile if editing current user
+      const current = getLocalStorageItem<UserProfile | null>(STORAGE_KEYS.USER_PROFILE, null);
+      if (current && current.id === userId) {
+        setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, {
+          ...current,
+          is_verified: isVerified,
+          verification_status: status,
+        });
+      }
+      return true;
+    },
+
+    async updateUserSubscription(
+      userId: string,
+      tier: SubscriptionTier
+    ): Promise<boolean> {
+      if (supabase && !isDemoMode() && isValidUuid(userId)) {
+        try {
+          const { error } = await supabase
+            .from("profiles")
+            .update({ subscription_tier: tier })
+            .eq("id", userId);
+
+          if (error) console.warn("Supabase subscription tier update warning:", error);
+        } catch (e) {
+          console.warn("Supabase subscription tier update exception:", e);
+        }
+      }
+
+      const current = getLocalStorageItem<UserProfile | null>(STORAGE_KEYS.USER_PROFILE, null);
+      if (current && current.id === userId) {
+        setLocalStorageItem(STORAGE_KEYS.USER_PROFILE, {
+          ...current,
+          subscription_tier: tier,
+        });
+      }
+      return true;
+    },
+
+    async getSystemStats(): Promise<{
+      totalUsers: number;
+      verifiedUsers: number;
+      pendingVerifications: number;
+      adminUsers: number;
+      totalMatches: number;
+    }> {
+      const users = await supabaseService.admin.getAllUsers();
+      const matches = getLocalStorageItem<Match[]>(STORAGE_KEYS.MATCHES, []);
+
+      return {
+        totalUsers: users.length,
+        verifiedUsers: users.filter((u) => u.is_verified || u.verification_status === "approved").length,
+        pendingVerifications: users.filter((u) => u.verification_status === "pending").length,
+        adminUsers: users.filter((u) => u.is_admin || u.role === "admin" || isDesignatedAdminEmail(u.email)).length,
+        totalMatches: matches.length,
+      };
     },
   },
 

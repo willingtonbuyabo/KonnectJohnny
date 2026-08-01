@@ -12,6 +12,7 @@ interface HeaderProps {
   activeTab: string;
   onOpenPrivacy: () => void;
   onOpenSubscription: () => void;
+  onOpenAdmin?: () => void;
   subscriptionTier?: SubscriptionTier;
   isDemo: boolean;
 }
@@ -21,6 +22,7 @@ export default function Header({
   activeTab,
   onOpenPrivacy,
   onOpenSubscription,
+  onOpenAdmin,
   subscriptionTier = "free",
   isDemo,
 }: HeaderProps) {
@@ -83,6 +85,19 @@ export default function Header({
             <Sparkles className="w-2.5 h-2.5" />
             Demo Mode
           </div>
+        )}
+
+        {/* Admin Portal Button */}
+        {onOpenAdmin && (
+          <button
+            onClick={onOpenAdmin}
+            className="flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-brand-gold/20 border border-brand-gold/40 text-brand-gold hover:border-brand-gold px-2.5 py-1.5 rounded-xl transition-all shadow-sm"
+            title="Admin Control Center"
+            id="header-admin-portal-btn"
+          >
+            <Crown className="w-4 h-4 text-amber-300" />
+            <span className="text-xs font-bold uppercase tracking-wider hidden sm:inline">Admin</span>
+          </button>
         )}
 
         {/* Privacy Trigger */}
