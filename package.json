@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
+    "keep-alive": "node scripts/keep-alive.js",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
