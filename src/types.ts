@@ -82,3 +82,28 @@ export interface MatchFilters {
   genders: string[];
   relationship_goals: string[];
 }
+
+export interface MpesaConfig {
+  enabled: boolean;
+  environment: "sandbox" | "production";
+  consumerKey: string;
+  consumerSecret: string;
+  passkey: string;
+  shortcode: string;
+  callbackUrl: string;
+}
+
+export interface StripeConfig {
+  enabled: boolean;
+  environment: "test" | "live";
+  publishableKey: string;
+  secretKey: string;
+  webhookSecret: string;
+}
+
+export interface PaymentGatewayConfig {
+  mpesa: MpesaConfig;
+  stripe: StripeConfig;
+  updatedAt?: string;
+  updatedBy?: string;
+}

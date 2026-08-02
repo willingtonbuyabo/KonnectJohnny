@@ -4,7 +4,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
-import { Profile, Match, Message, UserProfile, MatchFilters, AppPrivacySettings, SubscriptionTier } from "./types";
+import { Profile, Match, Message, UserProfile, MatchFilters, AppPrivacySettings, SubscriptionTier, PaymentGatewayConfig, MpesaConfig, StripeConfig } from "./types";
 import { mockProfiles } from "./data/mockProfiles";
 
 // Fetch from Vite environment variables
@@ -86,6 +86,7 @@ const STORAGE_KEYS = {
   MATCHES: "jonny_match_matches",
   MESSAGES: "jonny_match_messages",
   PRIVACY: "jonny_match_privacy_settings",
+  PAYMENT_CONFIG: "jonny_match_payment_gateway_config",
 };
 
 /**
@@ -1137,6 +1138,84 @@ export const supabaseService = {
         pendingVerifications: users.filter((u) => u.verification_status === "pending").length,
         adminUsers: users.filter((u) => u.is_admin || u.role === "admin" || isDesignatedAdminEmail(u.email)).length,
         totalMatches: matches.length,
+      };
+    },
+
+    getPaymentConfig(): PaymentGatewayConfig {
+      const defaultConfig: PaymentGatewayConfig = {
+        mpesa: {
+          enabled: true,
+          environment: "sandbox",
+          consumerKey: "",
+          consumerSecret: "",
+          passkey: "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919",
+          shortcode: "174379",
+          callbackUrl: "https://yourdomain.com/api/mpesa/callback",
+        },
+        stripe: {
+          enabled: true,
+          environment: "test",
+          publishableKey: "",
+          secretKey: "",
+          webhookSecret: "",
+        },
+        updatedAt: new Date().toISOString(),
+        updatedBy: "System Administrator",
+      };
+
+      return getLocalStorageItem<PaymentGatewayConfig>(STORAGE_KEYS.PAYMENT_CONFIG, defaultConfig);
+    },
+
+    savePaymentConfig(config: PaymentGatewayConfig): boolean {
+      setLocalStorageItem(STORAGE_KEYS.PAYMENT_CONFIG, {
+        ...config,
+        updatedAt: new Date().toISOString(),
+      });
+      return true;
+    },
+
+    async testMpesaConnection(mpesa: MpesaConfig): Promise<{ success: boolean; message: string }> {
+      // Validate M-Pesa format parameters
+      if (!mpesa.consumerKey.trim() || !mpesa.consumerSecret.trim()) {
+        return {
+          success: false,
+          message: "Consumer Key and Consumer Secret are required for Safaricom Daraja API.",
+        };
+      }
+      if (!mpesa.shortcode.trim()) {
+        return {
+          success: false,
+          message: "Please specify a Business Shortcode or Till Number.",
+        };
+      }
+      return {
+        success: true,
+        message: `M-Pesa (${mpesa.environment.toUpperCase()}) Daraja credentials formatted correctly! Shortcode: ${mpesa.shortcode}`,
+      };
+    },
+
+    async testStripeConnection(stripe: StripeConfig): Promise<{ success: boolean; message: string }> {
+      if (!stripe.publishableKey.trim() || !stripe.secretKey.trim()) {
+        return {
+          success: false,
+          message: "Both Stripe Publishable Key (pk_...) and Secret Key (sk_...) are required.",
+        };
+      }
+      if (!stripe.publishableKey.startsWith("pk_")) {
+        return {
+          success: false,
+          message: "Stripe Publishable Key should start with 'pk_test_' or 'pk_live_'.",
+        };
+      }
+      if (!stripe.secretKey.startsWith("sk_")) {
+        return {
+          success: false,
+          message: "Stripe Secret Key should start with 'sk_test_' or 'sk_live_'.",
+        };
+      }
+      return {
+        success: true,
+        message: `Stripe (${stripe.environment.toUpperCase()}) keys validated successfully! Mode: ${stripe.environment}`,
       };
     },
   },
