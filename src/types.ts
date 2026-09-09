@@ -107,3 +107,30 @@ export interface PaymentGatewayConfig {
   updatedAt?: string;
   updatedBy?: string;
 }
+
+export interface PublicPaymentConfig {
+  mpesa: {
+    enabled: boolean;
+    environment: "sandbox" | "production";
+    consumerKey: string;
+    hasConsumerSecret: boolean;
+    hasPasskey: boolean;
+    shortcode: string;
+    callbackUrl: string;
+  };
+  stripe: {
+    enabled: boolean;
+    environment: "test" | "live";
+    publishableKey: string;
+    hasSecretKey: boolean;
+    hasWebhookSecret: boolean;
+  };
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export interface PaymentTestResult {
+  success: boolean;
+  message: string;
+  details?: string;
+}
